@@ -1,0 +1,65 @@
+# Digitized SOP decision rules for DAM request routing.
+#
+# This file IS the codified rulebook (requirement F: "codify rules into
+# system"). Rules are evaluated top-down; the first match per field wins.
+# Every fired rule id is recorded in the audit trail, so routing outcomes are
+# deterministic and legally reconstructable — no individual judgment required
+# for low-risk flows.
+
+sops:
+  - id: SOP-DAM-001
+    name: Asset Disposal — Standard
+    applies_when:
+      request_type: asset_disposal
+  - id: SOP-DAM-002
+    name: Asset Acquisition & Investment
+    applies_when:
+      request_type: [asset_acquisition, investment]
+  - id: SOP-DAM-003
+    name: Asset Utilization / Leasing
+    applies_when:
+      request_type: [asset_lease, asset_utilization]
+  - id: SOP-DAM-999
+    name: General Governance Request (fallback)
+    applies_when: {}
+
+# Delegation of authority — amount thresholds in IDR.
+approval_rules:
+  - id: APR-001
+    description: Below 1B IDR — no board approval required
+    max_amount_idr: 1_000_000_000
+    approval_required: false
+    approval_level: null
+  - id: APR-002
+    description: 1B to 50B IDR — directorate approval
+    max_amount_idr: 50_000_000_000
+    approval_required: true
+    approval_level: directorate
+  - id: APR-003
+    description: 50B to 500B IDR — board of directors
+    max_amount_idr: 500_000_000_000
+    approval_required: true
+    approval_level: board_of_directors
+  - id: APR-004
+    description: Above 500B IDR — board of commissioners / shareholder
+    max_amount_idr: null
+    approval_required: true
+    approval_level: board_of_commissioners
+
+# Risk segmentation — drives automation level (requirement 8).
+risk_rules:
+  - id: RSK-001
+    description: Routine low-value requests are fully automated
+    max_amount_idr: 1_000_000_000
+    request_types: [asset_lease, asset_utilization]
+    tier: low
+  - id: RSK-002
+    description: Mid-value or disposal requests get human sign-off checkpoints
+    max_amount_idr: 50_000_000_000
+    request_types: null   # any
+    tier: medium
+  - id: RSK-003
+    description: High-value or strategic requests are human-in-the-loop throughout
+    max_amount_idr: null
+    request_types: null
+    tier: high
