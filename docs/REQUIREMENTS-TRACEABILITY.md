@@ -41,12 +41,22 @@ Last updated after **Sprint 1** (commit `cf56385`).
 | 1.5 Token compliance | Zero hardcoded hex in `src/` (CI grep gate); styling exclusively via `frontend/src/styles/tokens.scss`; 48px interactive elements |
 | 1.6 CI | `.github/workflows/ci.yml`: ruff + memory tests + Postgres-service tests + frontend build + token gate |
 
-## 4. Forward traceability (planned)
+## 4. Requirements → delivering sprint stories
 
-| Sprint | Requirements advanced |
-|---|---|
-| 2 — RAG maturity | #1, #2, #5 (retrieval quality is the ceiling on both agents; embedder inside the boundary) |
-| 3 — Drafting & consistency quality | #1, #2, #3 (template store, grounding verifier, propagation) |
-| 4 — Workflow & SOP completion | #4, #6, #7, #8 (full rulebook, simulator, queues, autonomous low-risk flow) |
-| 5 — UI & explainability | #5, F (trace timeline UI), DESIGN-IBMC full compliance |
-| 6 — Security & pilot | #5 hardening; measured proof of the 30% target |
+Which [SPRINT-PLAN.md](SPRINT-PLAN.md) stories deliver each requirement, and the sprint after which it is considered **done** (pilot-ready; Sprint 6 hardens and measures everything).
+
+| # | Requirement | Foundation (✅ done, Sprint 1) | Delivering stories | Done by |
+|---|---|---|---|---|
+| 1 | AI drafting engine | Drafting use case, artefact persistence (1.1, 1.2) | 2.1–2.4 retrieval quality (the ceiling on draft accuracy) · 2.6 per-sentence citations · **3.1** template store · **3.2** grounding verifier · **3.3** section review UX · 5.4 interaction states | **Sprint 3** |
+| 2 | Consistency checker | Consistency use case, typed findings (1.1, 1.2) | 2.1–2.4 retrieval · **3.4** pairwise scale + dedup + severity calibration · **3.6** side-by-side excerpt UI | **Sprint 3** |
+| 3 | Version control + SSOT | Master hierarchy persisted in `documents` table (1.2) | **3.5** stale-marking on master change + propagation diff view | **Sprint 3** |
+| 4 | Rule-based eligibility & routing | Rule engine + thresholds, tested (1.1) | **4.1** full SOP digitization with SMEs · **4.2** what-if rule simulator | **Sprint 4** |
+| 5 | Secure AI sandbox | Single model entry, MinIO/Postgres boundary, audit trail, auth (1.1–1.4) | **2.1** enterprise embedder inside the boundary · **6.1** prompt-injection guards · **6.2** PII redaction · **6.3** cost/latency observability · **6.4** WORM audit | **Sprint 6** |
+| 6 | Workflow + document orchestration | Stage machine with checkpoints, authenticated sign-offs, Postgres-persisted, tested (1.1, 1.2, 1.4) | **4.3** sign-off queues + notifications · **4.5** idempotent pipeline reruns · 5.2 case detail UI | **Sprint 4** |
+| 7 | SOP digitization + routing engine | YAML rulebook format + 3 scaffold SOPs (1.1) | **4.1** one decision tree per real SOP incl. escalation paths, SME sign-off · **4.2** simulator | **Sprint 4** |
+| 8 | Risk-based automation segmentation | Risk tiers drive checkpoints; role-gated overrides, tested (1.1, 1.4) | **4.4** justification-mandatory overrides + reporting · **4.6** hands-free low-risk flow end-to-end | **Sprint 4** |
+| — | ~30% productivity target | Metrics defined in SPRINT-PLAN.md | 2.5 eval harness baselines retrieval · **6.6** two-week pilot measuring all success metrics vs baseline | **Sprint 6** (measured) |
+| 9 | BPI-wide platform (DAM/DIM/DSI) | Port-based architecture makes artefacts/workflows reusable (1.1) | Out of 6-sprint scope; scoping informed by 6.6 pilot report | Phase 2 |
+| 10 | Agentic governance | Orchestrator pipeline seed (1.1) | **4.6** proves the autonomous low-risk path; full agentic operation | Phase 2/3 |
+
+Reading the matrix by sprint: **Sprint 3 closes requirements 1–3** (drafting, consistency, SSOT), **Sprint 4 closes 4 and 6–8** (routing, workflow, SOPs, risk automation), **Sprint 6 closes 5** (sandbox hardening) **and proves the 30% target**. Sprints 2 and 5 are enablers — retrieval quality underneath requirements 1–2, UI/explainability across all of them.
