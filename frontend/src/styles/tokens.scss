@@ -1,0 +1,76 @@
+// IBM design tokens — single source of truth for the frontend.
+// Derived from docs/design/DESIGN-IBMC.md. Do not hardcode colors, spacing,
+// radii, or shadows anywhere else; consume these custom properties.
+
+:root {
+  // -- Primary -----------------------------------------------------------
+  --ibm-blue: #0f62fe;          // primary CTAs, links, active states
+  --ibm-blue-bright: #4589ff;   // hover states, secondary emphasis
+  --ibm-blue-deep: #0043ce;     // active/pressed, high-contrast text on light
+
+  // -- Accents -----------------------------------------------------------
+  --ibm-blue-light: #78a9ff;    // tertiary accents, ghost hover borders
+  --ibm-blue-pale: #a6c8ff;     // low-emphasis overlays
+  --ibm-blue-very-pale: #d0e2ff; // light backgrounds, info badge bg
+
+  // -- Semantic ----------------------------------------------------------
+  --ibm-error: #da1e28;
+  --ibm-error-bright: #fa4d56;
+  --ibm-warning: #f1c21b;
+  --ibm-success: #24a148;
+  --ibm-badge-info-bg: #d0e2ff;
+  --ibm-badge-info-text: #0043ce;
+  --ibm-badge-success-bg: #d3f6d3;
+  --ibm-badge-warning-bg: #f9e3ba;
+  --ibm-badge-warning-text: #b8860b;
+  --ibm-badge-error-bg: #ffdbdb;
+
+  // -- Neutrals ----------------------------------------------------------
+  --ibm-text-primary: #161616;   // headings, body
+  --ibm-text-secondary: #393939;
+  --ibm-text-muted: #525252;     // metadata, helper text
+  --ibm-text-disabled: #8d8d8d;  // placeholders, disabled
+  --ibm-border: #e0e0e0;         // primary divider / card border
+  --ibm-border-soft: #c6c6c6;    // inactive field borders
+
+  // -- Surfaces ----------------------------------------------------------
+  --ibm-surface: #ffffff;        // cards, modals, main content
+  --ibm-surface-secondary: #f4f4f4; // input bg, subtle sections
+
+  // -- Spacing scale (8px base; only these values) -------------------------
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 40px;
+  --sp-8: 48px;
+  --sp-9: 64px;
+  --sp-10: 72px;
+
+  // -- Radius (sharp corners are the default) ------------------------------
+  --radius-default: 0;
+  --radius-pill: 12px;           // badges only
+
+  // -- Elevation -----------------------------------------------------------
+  --elev-0: none;
+  --elev-1: 0px 4px 8px rgba(0, 0, 0, 0.06);
+  --elev-2: 0px 8px 16px rgba(0, 0, 0, 0.08);
+  --elev-3: 0px 12px 24px rgba(0, 0, 0, 0.12);
+  --elev-4: 0px 20px 48px rgba(0, 0, 0, 0.16);
+
+  // -- Type ramp (IBM Plex Sans; weights 300/400/600 only) -----------------
+  --type-display: 300 53px/63px 'IBM Plex Sans', sans-serif;
+  --type-h2: 400 42px/52px 'IBM Plex Sans', sans-serif;
+  --type-h3: 400 28px/36px 'IBM Plex Sans', sans-serif;
+  --type-h4: 400 20px/28px 'IBM Plex Sans', sans-serif;
+  --type-h5: 600 16px/24px 'IBM Plex Sans', sans-serif;
+  --type-body: 400 16px/24px 'IBM Plex Sans', sans-serif;
+  --type-link: 400 14px/18px 'IBM Plex Sans', sans-serif;
+  --type-button: 600 14px/18px 'IBM Plex Sans', sans-serif;
+  --type-label: 400 12px/16px 'IBM Plex Sans', sans-serif;
+
+  // -- Interaction ----------------------------------------------------------
+  --touch-target-min: 48px;
+}

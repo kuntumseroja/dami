@@ -3,13 +3,15 @@
   $font-path: 'https://1.www.s81c.com/common/carbon/plex'
 );
 
-/* IBM Carbon — white theme, soft-blue accents */
+@use './styles/tokens';
+
+/* Back-compat aliases — canonical values live in styles/tokens.scss */
 :root {
-  --dam-blue: #0f62fe;       /* IBM Blue 60 */
-  --dam-blue-10: #edf5ff;    /* Carbon Blue 10 */
-  --dam-blue-20: #d0e2ff;    /* Carbon Blue 20 */
-  --dam-blue-40: #78a9ff;    /* Carbon Blue 40 */
-  --dam-border: #e0e0e0;
+  --dam-blue: var(--ibm-blue);
+  --dam-blue-10: #edf5ff;
+  --dam-blue-20: var(--ibm-blue-very-pale);
+  --dam-blue-40: var(--ibm-blue-light);
+  --dam-border: var(--ibm-border);
 }
 
 body {
