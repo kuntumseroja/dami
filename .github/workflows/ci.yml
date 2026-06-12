@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check app tests
+      - name: Tests (in-memory adapters)
+        run: pytest -q
+
+  backend-postgres:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: dam
+          POSTGRES_PASSWORD: dam
+          POSTGRES_DB: dam_governance
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U dam"
+          --health-interval 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - name: Tests (Postgres + pgvector)
+        env:
+          REPO_BACKEND: postgres
+          DATABASE_URL: postgresql+asyncpg://dam:dam@localhost:55432/dam_governance
+        run: pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install
+      - name: Build
+        run: npm run build
+      - name: Token compliance — no hardcoded hex outside tokens.scss
+        run: |
+          if grep -rEn '#[0-9a-fA-F]{6}' src --include='*.jsx' --include='*.js'; then
+            echo 'Hardcoded hex color found — use frontend/src/styles/tokens.scss'; exit 1
+          fi

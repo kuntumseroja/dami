@@ -73,17 +73,17 @@ export default function Consistency() {
               <Tag type={SEVERITY_TAG[f.severity]}>{f.severity}</Tag>{' '}
               <Tag type="cool-gray">{f.kind.replace('_', ' ')}</Tag>
               <p>{f.description}</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <blockquote style={{ borderLeft: '3px solid #78a9ff', margin: 0, paddingLeft: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-4)' }}>
+                <blockquote className="dam-excerpt dam-excerpt--reference">
                   <small><code>{f.document_a}</code></small>
-                  <p style={{ fontSize: '0.875rem' }}>{f.excerpt_a}</p>
+                  <p style={{ font: 'var(--type-link)' }}>{f.excerpt_a}</p>
                 </blockquote>
-                <blockquote style={{ borderLeft: '3px solid #ff8389', margin: 0, paddingLeft: '1rem' }}>
+                <blockquote className="dam-excerpt dam-excerpt--conflict">
                   <small><code>{f.document_b}</code></small>
-                  <p style={{ fontSize: '0.875rem' }}>{f.excerpt_b}</p>
+                  <p style={{ font: 'var(--type-link)' }}>{f.excerpt_b}</p>
                 </blockquote>
               </div>
-              <p style={{ background: '#edf5ff', padding: '0.75rem', fontSize: '0.875rem' }}>
+              <p className="dam-resolution">
                 <strong>Suggested resolution:</strong> {f.suggested_resolution}
               </p>
             </div>

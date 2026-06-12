@@ -111,7 +111,7 @@ export default function Routing() {
             <Tag type={RISK_TAG[decision.risk_tier]}>{decision.risk_tier} risk</Tag>
           </p>
           <p style={{ whiteSpace: 'pre-wrap' }}>{decision.explanation}</p>
-          <p style={{ fontSize: '0.75rem', color: '#525252' }}>
+          <p className="dam-meta">
             Rules fired: {decision.rules_fired.map((r) => <code key={r}>{r} </code>)}
             · Trace: <code>{decision.trace_id}</code>
           </p>

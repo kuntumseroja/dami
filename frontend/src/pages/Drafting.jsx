@@ -92,7 +92,7 @@ export default function Drafting() {
       {draft && (
         <div className="dam-card dam-card--accent">
           <h2 style={{ fontWeight: 300, marginTop: 0 }}>{draft.title}</h2>
-          <p style={{ color: '#525252', fontSize: '0.875rem' }}>
+          <p className="dam-meta">
             Model: <code>{draft.model}</code> · Trace: <code>{draft.trace_id}</code>
           </p>
           {draft.sections.map((s) => (
@@ -107,7 +107,7 @@ export default function Drafting() {
                 <>
                   <p style={{ whiteSpace: 'pre-wrap' }}>{s.content}</p>
                   {s.sources.length > 0 && (
-                    <p style={{ fontSize: '0.75rem', color: '#525252' }}>
+                    <p className="dam-meta">
                       Sources: {s.sources.map((src) => <code key={src}>{src} </code>)}
                     </p>
                   )}

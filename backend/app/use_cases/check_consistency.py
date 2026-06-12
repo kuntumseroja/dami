@@ -1,4 +1,4 @@
-"""Cross-document consistency agent.
+"""Cross-document consistency use case.
 
 Compares the artefacts of a case (review note vs board note vs decision doc
 vs communication) against the master submission and flags inconsistencies,
@@ -7,10 +7,10 @@ reconciliation that consumes ~30% of senior reviewers' time.
 """
 from pydantic import BaseModel
 
-from app.agents.base import get_client, model_id
-from app.core.audit import audit_log, new_trace_id
-from app.models.schemas import ConsistencyFinding, ConsistencyReport
-from app.rag.retriever import format_context, retrieve
+from app.domain.models import new_trace_id
+from app.domain.models import ConsistencyFinding, ConsistencyReport
+from app.domain.ports import AuditLog, CaseRepository, Embedder, LLMGateway, VectorStore
+from app.use_cases.retrieval import format_context, retrieve
 
 
 class FindingList(BaseModel):
@@ -35,49 +35,47 @@ about — a human reviewer filters downstream. If documents are fully \
 consistent, return an empty list."""
 
 
-async def check_consistency(case_id: str) -> ConsistencyReport:
+async def check_consistency(
+    case_id: str, *, llm: LLMGateway, embedder: Embedder,
+    vectors: VectorStore, repository: CaseRepository, audit: AuditLog,
+) -> ConsistencyReport:
     trace_id = new_trace_id()
     chunks = await retrieve(
         "amounts dates parties terms decisions references versions",
-        k=24,
-        case_id=case_id,
+        embedder=embedder, vectors=vectors,
+        k=24, case_id=case_id,
     )
-    context = format_context(chunks)
     documents = sorted({c.document_id for c in chunks})
 
-    client = get_client()
-    response = await client.messages.parse(
-        model=model_id(),
-        max_tokens=16000,
-        thinking={"type": "adaptive"},
+    result = await llm.parse(
         system=CONSISTENCY_SYSTEM,
-        messages=[{
-            "role": "user",
-            "content": (
-                f"Document set for case {case_id} "
-                f"({len(documents)} documents):\n{context}\n\n"
-                "Audit the full set for inconsistencies, outdated references, "
-                "and missing updates."
-            ),
-        }],
-        output_format=FindingList,
+        prompt=(
+            f"Document set for case {case_id} "
+            f"({len(documents)} documents):\n{format_context(chunks)}\n\n"
+            "Audit the full set for inconsistencies, outdated references, "
+            "and missing updates."
+        ),
+        output_type=FindingList,
+        max_tokens=16000,
     )
-    findings = response.parsed_output.findings
+    report = ConsistencyReport(
+        case_id=case_id,
+        findings=result.findings,
+        documents_compared=documents,
+        trace_id=trace_id,
+    )
 
-    audit_log(
+    await repository.save_artefact(case_id, "consistency_report",
+                                   report.model_dump(mode="json"))
+    audit.log(
         "agent.consistency",
         trace_id,
         {
             "case_id": case_id,
-            "model": model_id(),
+            "model": llm.model,
             "documents_compared": documents,
-            "findings_count": len(findings),
-            "findings": [f.model_dump() for f in findings],
+            "findings_count": len(result.findings),
+            "findings": [f.model_dump() for f in result.findings],
         },
     )
-    return ConsistencyReport(
-        case_id=case_id,
-        findings=findings,
-        documents_compared=documents,
-        trace_id=trace_id,
-    )
+    return report

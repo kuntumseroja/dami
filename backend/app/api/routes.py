@@ -1,102 +1,185 @@
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+"""Thin HTTP controllers — translate requests to use-case calls, nothing more."""
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
-from app.agents.consistency import check_consistency
-from app.agents.drafting import draft_nota
-from app.agents.orchestrator import run_case_pipeline
-from app.agents.routing import route_request
-from app.core.audit import read_audit_log
-from app.ingestion.pipeline import ingest_document
-from app.models.schemas import (
+from app.domain.models import (
     ConsistencyReport,
     DocumentType,
     DraftRequest,
     IngestionResult,
     NotaDraft,
     RiskTier,
+    Role,
     RoutingDecision,
     RoutingRequest,
+    SignoffRequired,
+    User,
 )
-from app.workflow import engine
+from app.infrastructure.container import Container, get_container
+from app.infrastructure.security import get_current_user, require_roles
+from app.use_cases import manage_case
+from app.use_cases.check_consistency import check_consistency
+from app.use_cases.draft_nota import draft_nota
+from app.use_cases.ingest_document import ingest_document
+from app.use_cases.route_request import route_request
+from app.use_cases.run_pipeline import run_case_pipeline
 
 router = APIRouter(prefix="/api")
 
 
-# --- Cases / workflow ---------------------------------------------------------
+def deps() -> Container:
+    return get_container()
+
+
+# --- Cases / workflow -----------------------------------------------------------
 
 @router.post("/cases")
-def create_case(title: str = Form(...)):
-    return engine.create_case(title)
+async def create_case(
+    title: str = Form(...),
+    user: User = Depends(get_current_user),
+    c: Container = Depends(deps),
+):
+    case = await manage_case.create_case(title, user, repository=c.repository, audit=c.audit)
+    return case.model_dump(mode="json")
 
 
 @router.get("/cases")
-def list_cases():
-    return engine.list_cases()
+async def list_cases(c: Container = Depends(deps)):
+    return [case.model_dump(mode="json") for case in await c.repository.list_all()]
 
 
 @router.get("/cases/{case_id}")
-def get_case(case_id: str):
-    case = engine.get_case(case_id)
+async def get_case(case_id: str, c: Container = Depends(deps)):
+    case = await c.repository.get(case_id)
     if case is None:
         raise HTTPException(404, "case not found")
-    return case
+    return case.model_dump(mode="json")
 
 
 @router.post("/cases/{case_id}/advance")
-def advance_case(case_id: str, signoff_by: str | None = Form(None)):
-    if engine.get_case(case_id) is None:
-        raise HTTPException(404, "case not found")
+async def advance_case(
+    case_id: str,
+    user: User = Depends(get_current_user),
+    c: Container = Depends(deps),
+):
     try:
-        return engine.advance(case_id, signoff_by=signoff_by)
-    except PermissionError as exc:
+        case = await manage_case.advance_case(
+            case_id, user, repository=c.repository, audit=c.audit)
+    except KeyError:
+        raise HTTPException(404, "case not found") from None
+    except manage_case.Forbidden as exc:
+        raise HTTPException(403, str(exc)) from exc
+    except SignoffRequired as exc:
         raise HTTPException(409, str(exc)) from exc
+    return case.model_dump(mode="json")
 
 
 @router.post("/cases/{case_id}/risk-tier")
-def set_risk_tier(case_id: str, tier: RiskTier = Form(...)):
-    if engine.get_case(case_id) is None:
-        raise HTTPException(404, "case not found")
-    return engine.set_risk_tier(case_id, tier)
+async def set_risk_tier(
+    case_id: str,
+    tier: RiskTier = Form(...),
+    user: User = Depends(require_roles(Role.REVIEWER, Role.APPROVER)),
+    c: Container = Depends(deps),
+):
+    try:
+        case = await manage_case.set_risk_tier(
+            case_id, tier, actor=user.id, repository=c.repository, audit=c.audit)
+    except KeyError:
+        raise HTTPException(404, "case not found") from None
+    return case.model_dump(mode="json")
 
 
-# --- Ingestion ----------------------------------------------------------------
+@router.get("/cases/{case_id}/documents")
+async def list_documents(case_id: str, c: Container = Depends(deps)):
+    return [d.model_dump(mode="json") for d in await c.repository.list_documents(case_id)]
+
+
+@router.get("/cases/{case_id}/artefacts")
+async def list_artefacts(case_id: str, kind: str | None = None,
+                         c: Container = Depends(deps)):
+    return await c.repository.list_artefacts(case_id, kind)
+
+
+# --- Ingestion --------------------------------------------------------------------
 
 @router.post("/documents/ingest", response_model=IngestionResult)
 async def ingest(
     file: UploadFile = File(...),
     doc_type: DocumentType = Form(...),
     case_id: str | None = Form(None),
+    user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
+    c: Container = Depends(deps),
 ):
     data = await file.read()
-    return await ingest_document(file.filename or "upload", data, doc_type, case_id)
+    return await ingest_document(
+        file.filename or "upload", data, doc_type, case_id,
+        embedder=c.embedder, vectors=c.vectors, storage=c.storage,
+        repository=c.repository, audit=c.audit,
+    )
 
 
-# --- Agents -------------------------------------------------------------------
+# --- Agents -------------------------------------------------------------------------
 
 @router.post("/agents/draft", response_model=NotaDraft)
-async def agent_draft(request: DraftRequest):
-    return await draft_nota(request)
+async def agent_draft(
+    request: DraftRequest,
+    user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
+    c: Container = Depends(deps),
+):
+    return await draft_nota(request, llm=c.llm, embedder=c.embedder,
+                            vectors=c.vectors, repository=c.repository, audit=c.audit)
 
 
 @router.post("/agents/consistency/{case_id}", response_model=ConsistencyReport)
-async def agent_consistency(case_id: str):
-    return await check_consistency(case_id)
+async def agent_consistency(
+    case_id: str,
+    user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
+    c: Container = Depends(deps),
+):
+    return await check_consistency(case_id, llm=c.llm, embedder=c.embedder,
+                                   vectors=c.vectors, repository=c.repository,
+                                   audit=c.audit)
 
 
 @router.post("/agents/route", response_model=RoutingDecision)
-async def agent_route(request: RoutingRequest):
-    return await route_request(request)
+async def agent_route(
+    request: RoutingRequest,
+    user: User = Depends(get_current_user),
+    c: Container = Depends(deps),
+):
+    return await route_request(request, llm=c.llm, repository=c.repository,
+                               audit=c.audit)
 
 
 @router.post("/agents/pipeline/{case_id}")
-async def agent_pipeline(case_id: str):
+async def agent_pipeline(
+    case_id: str,
+    user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
+    c: Container = Depends(deps),
+):
     try:
-        return await run_case_pipeline(case_id)
+        return await run_case_pipeline(
+            case_id, user, llm=c.llm, embedder=c.embedder, vectors=c.vectors,
+            repository=c.repository, audit=c.audit)
     except KeyError as exc:
         raise HTTPException(404, str(exc)) from exc
 
 
-# --- Audit / explainability ----------------------------------------------------
+# --- Audit / explainability -----------------------------------------------------------
 
 @router.get("/audit")
-def audit(limit: int = 200):
-    return read_audit_log(limit)
+async def audit_log(
+    limit: int = 200,
+    user: User = Depends(get_current_user),
+    c: Container = Depends(deps),
+):
+    return c.audit.read(limit)
+
+
+@router.get("/cases/{case_id}/trace")
+async def case_trace(
+    case_id: str,
+    user: User = Depends(require_roles(Role.AUDITOR, Role.REVIEWER, Role.APPROVER)),
+    c: Container = Depends(deps),
+):
+    """Full decision provenance for a case, reconstructed from the audit trail."""
+    return [r for r in c.audit.read(5000) if r.get("case_id") == case_id]

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -10,6 +11,11 @@ class Settings(BaseSettings):
     dam_model: str = "claude-opus-4-8"
     anthropic_api_key: str = ""
 
+    # Adapter selection (hexagonal seams)
+    repo_backend: Literal["memory", "postgres"] = "postgres"
+    storage_backend: Literal["local", "minio"] = "minio"
+    auth_mode: Literal["dev", "oidc"] = "dev"
+
     database_url: str = "postgresql+asyncpg://dam:dam@localhost:5432/dam_governance"
 
     minio_endpoint: str = "localhost:9000"
@@ -18,6 +24,7 @@ class Settings(BaseSettings):
     minio_bucket: str = "governance-documents"
 
     dam_audit_log_path: str = "./data/audit"
+    local_storage_path: str = "./data/objects"
     sop_config_dir: str = "../config/sop"
 
 

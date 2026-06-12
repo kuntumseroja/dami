@@ -1,18 +1,17 @@
-"""NOTA drafting agent.
+"""NOTA drafting use case.
 
 Generates the *descriptive* 80% of a NOTA from submission documents,
 templates, and historical notes retrieved via RAG. Judgment sections are
-emitted as empty placeholders — they belong to the human reviewer by design
-(requirement B/D: AI does the restating, humans keep the judgment).
+emitted as empty placeholders — they belong to the human reviewer by design.
 """
 from pydantic import BaseModel
 
-from app.agents.base import get_client, model_id
-from app.core.audit import audit_log, new_trace_id
-from app.models.schemas import DraftRequest, NotaDraft, NotaSection
-from app.rag.retriever import format_context, retrieve
+from app.domain.models import new_trace_id
+from app.domain.models import DraftRequest, NotaDraft, NotaSection
+from app.domain.ports import AuditLog, CaseRepository, Embedder, LLMGateway, VectorStore
+from app.use_cases.retrieval import format_context, retrieve
 
-# Default NOTA structure; replace per-template via the templates store.
+# Default NOTA structure; Sprint 3 moves this into the template store.
 DESCRIPTIVE_SECTIONS = [
     "Latar Belakang (Background)",
     "Ringkasan Permohonan (Request Summary)",
@@ -51,57 +50,56 @@ Write in Bahasa Indonesia unless the sources are predominantly English.
 mohon dilengkapi]" rather than inventing content."""
 
 
-async def draft_nota(request: DraftRequest) -> NotaDraft:
+async def draft_nota(
+    request: DraftRequest, *, llm: LLMGateway, embedder: Embedder,
+    vectors: VectorStore, repository: CaseRepository, audit: AuditLog,
+) -> NotaDraft:
     trace_id = new_trace_id()
     chunks = await retrieve(
         "submission background legal basis chronology supporting data",
-        k=16,
-        case_id=request.case_id,
+        embedder=embedder, vectors=vectors,
+        k=16, case_id=request.case_id,
         doc_types=["submission", "historical_nota", "template"],
     )
-    context = format_context(chunks)
     headings = "\n".join(f"- {h}" for h in DESCRIPTIVE_SECTIONS)
-    instructions = f"\nAdditional instructions: {request.instructions}" if request.instructions else ""
+    extra = f"\nAdditional instructions: {request.instructions}" if request.instructions else ""
 
-    client = get_client()
-    response = await client.messages.parse(
-        model=model_id(),
-        max_tokens=16000,
-        thinking={"type": "adaptive"},
+    drafted = await llm.parse(
         system=DRAFTING_SYSTEM,
-        messages=[{
-            "role": "user",
-            "content": (
-                f"Sources for case {request.case_id}:\n{context}\n\n"
-                f"Draft these descriptive sections:\n{headings}{instructions}"
-            ),
-        }],
-        output_format=DraftedSections,
+        prompt=(
+            f"Sources for case {request.case_id}:\n{format_context(chunks)}\n\n"
+            f"Draft these descriptive sections:\n{headings}{extra}"
+        ),
+        output_type=DraftedSections,
+        max_tokens=16000,
     )
-    drafted = response.parsed_output
 
     sections = [
-        NotaSection(heading=s.heading, kind="descriptive", content=s.content, sources=s.source_refs)
+        NotaSection(heading=s.heading, kind="descriptive", content=s.content,
+                    sources=s.source_refs)
         for s in drafted.sections
     ] + [
         NotaSection(heading=h, kind="judgment", content="", sources=[])
         for h in JUDGMENT_SECTIONS
     ]
+    draft = NotaDraft(
+        case_id=request.case_id,
+        title=drafted.title,
+        sections=sections,
+        model=llm.model,
+        trace_id=trace_id,
+    )
 
-    audit_log(
+    await repository.save_artefact(request.case_id, "nota_draft",
+                                   draft.model_dump(mode="json"))
+    audit.log(
         "agent.drafting",
         trace_id,
         {
             "case_id": request.case_id,
-            "model": model_id(),
+            "model": llm.model,
             "sources": [c.ref for c in chunks],
             "sections_drafted": [s.heading for s in drafted.sections],
         },
     )
-    return NotaDraft(
-        case_id=request.case_id,
-        title=drafted.title,
-        sections=sections,
-        model=model_id(),
-        trace_id=trace_id,
-    )
+    return draft

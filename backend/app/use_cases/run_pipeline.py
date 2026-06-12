@@ -1,0 +1,75 @@
+"""Multi-agent orchestration: extraction → routing → drafting → consistency.
+
+Low-risk cases flow through without pausing; medium/high-risk cases stop at
+the workflow engine's human checkpoints. This is the seed of the long-term
+agentic governance vision.
+"""
+from app.domain.models import new_trace_id
+from app.domain.models import DraftRequest, RoutingRequest, User
+from app.domain.ports import AuditLog, CaseRepository, Embedder, LLMGateway, VectorStore
+from app.use_cases.check_consistency import check_consistency
+from app.use_cases.draft_nota import draft_nota
+from app.use_cases.extract_fields import extract_submission_fields
+from app.use_cases.manage_case import set_risk_tier
+from app.use_cases.route_request import route_request
+
+
+async def run_case_pipeline(
+    case_id: str, user: User, *, llm: LLMGateway, embedder: Embedder,
+    vectors: VectorStore, repository: CaseRepository, audit: AuditLog,
+) -> dict:
+    trace_id = new_trace_id()
+    case = await repository.get(case_id)
+    if case is None:
+        raise KeyError(f"unknown case {case_id}")
+
+    # 1. Extract structured facts from the ingested submission.
+    fields, extraction_trace = await extract_submission_fields(
+        case_id, llm=llm, embedder=embedder, vectors=vectors, audit=audit)
+
+    # 2. Deterministic routing → sets the case's risk tier / automation level.
+    routing = await route_request(
+        RoutingRequest(
+            case_id=case_id,
+            request_type=fields.request_type,
+            amount_idr=fields.amount_idr,
+            business_unit=fields.requesting_unit,
+        ),
+        llm=llm, repository=repository, audit=audit,
+    )
+    await set_risk_tier(case_id, routing.risk_tier, actor="rule_engine",
+                        repository=repository, audit=audit)
+
+    # 3. Draft the descriptive NOTA sections.
+    draft = await draft_nota(
+        DraftRequest(case_id=case_id),
+        llm=llm, embedder=embedder, vectors=vectors,
+        repository=repository, audit=audit,
+    )
+
+    # 4. Audit the document set for consistency.
+    report = await check_consistency(
+        case_id, llm=llm, embedder=embedder, vectors=vectors,
+        repository=repository, audit=audit,
+    )
+
+    audit.log(
+        "orchestrator.pipeline_completed",
+        trace_id,
+        {
+            "case_id": case_id,
+            "actor": user.id,
+            "risk_tier": routing.risk_tier.value,
+            "child_traces": [extraction_trace, routing.trace_id,
+                             draft.trace_id, report.trace_id],
+            "findings": len(report.findings),
+        },
+    )
+    return {
+        "case": (await repository.get(case_id)).model_dump(mode="json"),
+        "extracted_fields": fields.model_dump(),
+        "routing": routing.model_dump(mode="json"),
+        "draft": draft.model_dump(mode="json"),
+        "consistency": report.model_dump(mode="json"),
+        "trace_id": trace_id,
+    }

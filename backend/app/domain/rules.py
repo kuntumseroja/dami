@@ -6,21 +6,22 @@ in routing is to phrase a plain-language explanation of the rules that fired.
 This split is the liability shield: outcomes are reproducible from the YAML
 rulebook, and the audit trail records exactly which rule ids fired.
 """
+import os
 from functools import lru_cache
 from pathlib import Path
 
 import yaml
 
-from app.core.config import get_settings
-from app.models.schemas import RiskTier, RoutingRequest
+from app.domain.models import RiskTier, RoutingRequest
 
 
 @lru_cache
 def load_rulebook() -> dict:
-    sop_dir = Path(get_settings().sop_config_dir)
+    # Rulebook location: SOP_CONFIG_DIR env var, falling back to the repo's
+    # config/sop directory. Plain env access keeps the domain framework-free.
+    sop_dir = Path(os.environ.get("SOP_CONFIG_DIR", "../config/sop"))
     rules_file = sop_dir / "routing-rules.yaml"
     if not rules_file.exists():
-        # Resolve relative to repo root when running from backend/
         rules_file = Path(__file__).resolve().parents[3] / "config/sop/routing-rules.yaml"
     with rules_file.open(encoding="utf-8") as fh:
         return yaml.safe_load(fh)

@@ -1,15 +1,14 @@
-"""Document ingestion pipeline: parse → chunk → embed → index → extract.
+"""Document ingestion: store original → parse → chunk → embed → index → register.
 
-Supports PDF and DOCX submissions, SOPs, templates, and historical NOTAs.
-Extraction of structured fields is delegated to the extraction agent.
+Supports PDF, DOCX, and plain-text submissions, SOPs, templates, and
+historical NOTAs.
 """
 import io
 import uuid
 
-from app.core.audit import audit_log, new_trace_id
-from app.models.schemas import DocumentType, IngestionResult
-from app.rag.embeddings import embed_texts
-from app.rag.vectorstore import Chunk, upsert_chunks
+from app.domain.models import new_trace_id
+from app.domain.models import Chunk, DocumentType, GovernanceDocument, IngestionResult
+from app.domain.ports import AuditLog, CaseRepository, Embedder, ObjectStorage, VectorStore
 
 CHUNK_SIZE = 1200
 CHUNK_OVERLAP = 150
@@ -46,11 +45,22 @@ async def ingest_document(
     filename: str,
     data: bytes,
     doc_type: DocumentType,
-    case_id: str | None = None,
+    case_id: str | None,
+    *,
+    embedder: Embedder,
+    vectors: VectorStore,
+    storage: ObjectStorage,
+    repository: CaseRepository,
+    audit: AuditLog,
 ) -> IngestionResult:
     document_id = f"doc_{uuid.uuid4().hex[:12]}"
     trace_id = new_trace_id()
 
+    # 1. Preserve the original file (evidence trail).
+    storage_key = f"cases/{case_id or 'unassigned'}/{document_id}/{filename}"
+    storage.put(storage_key, data)
+
+    # 2. Parse and index for retrieval.
     content = parse_bytes(filename, data)
     pieces = chunk_text(content)
     chunks = [
@@ -63,10 +73,22 @@ async def ingest_document(
         )
         for i, piece in enumerate(pieces)
     ]
-    embeddings = await embed_texts([c.content for c in chunks])
-    indexed = await upsert_chunks(chunks, embeddings) if chunks else 0
+    embeddings = await embedder.embed_texts([c.content for c in chunks])
+    indexed = await vectors.replace_document(chunks, embeddings)
 
-    audit_log(
+    # 3. Register document metadata (submissions are the master record).
+    await repository.save_document(
+        GovernanceDocument(
+            id=document_id,
+            case_id=case_id,
+            doc_type=doc_type,
+            title=filename,
+            is_master=doc_type == DocumentType.SUBMISSION,
+            storage_key=storage_key,
+        )
+    )
+
+    audit.log(
         "document.ingested",
         trace_id,
         {
@@ -74,7 +96,9 @@ async def ingest_document(
             "filename": filename,
             "doc_type": doc_type.value,
             "case_id": case_id,
+            "storage_key": storage_key,
             "chunks_indexed": indexed,
         },
     )
-    return IngestionResult(document_id=document_id, chunks_indexed=indexed)
+    return IngestionResult(document_id=document_id, chunks_indexed=indexed,
+                           storage_key=storage_key)

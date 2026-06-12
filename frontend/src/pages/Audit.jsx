@@ -37,7 +37,7 @@ export default function Audit() {
         sign-offs — no individual carries unrecorded liability.
       </p>
 
-      <Button kind="tertiary" size="sm" renderIcon={Renew} onClick={refresh} style={{ marginBottom: '1rem' }}>
+      <Button kind="tertiary" renderIcon={Renew} onClick={refresh} style={{ marginBottom: 'var(--sp-4)' }}>
         Refresh
       </Button>
 
@@ -61,7 +61,7 @@ export default function Audit() {
                 </TableCell>
                 <TableCell><code>{r.trace_id}</code></TableCell>
                 <TableCell><code>{r.case_id || '—'}</code></TableCell>
-                <TableCell style={{ fontSize: '0.75rem', color: '#525252' }}>
+                <TableCell className="dam-meta">
                   {r.rules_fired?.join(', ') ||
                     r.sources?.length != null && `${r.sources.length} sources` ||
                     r.filename ||

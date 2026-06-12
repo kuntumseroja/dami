@@ -8,37 +8,39 @@
 
 3. **Humans keep the judgment.** NOTA drafts split sections into `descriptive` (AI-generated, ~80%) and `judgment` (always empty, reserved for the reviewer, ~20%).
 
-4. **Everything is audited.** A single append-only audit log (`app/core/audit.py`) records every AI call, rule firing, ingestion, and workflow transition with a trace id. The explainability module reconstructs the full decision trace per case or per trace id.
+4. **Everything is audited.** A single append-only audit log records every AI call, rule firing, ingestion, and workflow transition with a trace id; `/api/cases/{id}/trace` reconstructs the full decision provenance per case.
 
-5. **Risk-based automation.** The workflow engine enforces human sign-off checkpoints at evaluation/board/decision stages for medium and high-risk cases; low-risk cases flow through automatically.
+5. **Risk-based automation.** The `Case` entity enforces human sign-off checkpoints at evaluation/board/decision stages for medium and high-risk cases; low-risk cases flow through automatically. Sign-off identity always comes from the authenticated user, never from request input.
 
-## Components
+6. **Clean architecture.** Dependencies point inward: `domain` (entities, ports, SOP rules — framework-free) ← `use_cases` (agent and workflow logic against ports) ← `adapters` (Claude, Postgres, pgvector, MinIO, JSONL audit) ← `infrastructure` (config, DI container, security) ← `api` (thin controllers). New external dependencies enter only through a port in `domain/ports.py`.
 
-| Component | Path | Responsibility |
+## Layout (clean architecture)
+
+| Layer | Path | Contents |
 |---|---|---|
-| Workflow engine | `backend/app/workflow/engine.py` | Stage machine: submission → evaluation → board → decision → communication, with risk-tier checkpoints |
-| SOP rule engine | `backend/app/workflow/rules.py` + `config/sop/*.yaml` | Deterministic SOP selection, delegation-of-authority approval thresholds, risk segmentation |
-| Extraction agent | `backend/app/agents/extraction.py` | Structured field extraction from submissions (structured outputs, null-on-absent) |
-| Drafting agent | `backend/app/agents/drafting.py` | Descriptive NOTA sections, grounded in RAG, judgment sections left empty |
-| Consistency agent | `backend/app/agents/consistency.py` | Cross-document inconsistencies / outdated references / missing updates with quoted excerpts |
-| Routing agent | `backend/app/agents/routing.py` | Wraps the rule engine; LLM produces the plain-language explanation only |
-| Orchestrator | `backend/app/agents/orchestrator.py` | Runs extraction → routing → drafting → consistency per case |
-| RAG | `backend/app/rag/` | pgvector store, embedding interface (swap-in enterprise embedder), retriever with case/doc-type filters |
-| Ingestion | `backend/app/ingestion/pipeline.py` | PDF/DOCX/TXT parse → chunk → embed → index |
-| Audit & explainability | `backend/app/core/audit.py`, `backend/app/explainability/trace.py` | Append-only JSONL audit, trace reconstruction |
-| Frontend | `frontend/` | React + IBM Carbon: Dashboard, Drafting, Consistency, Routing, Audit |
+| Domain | `backend/app/domain/` | `models.py` (Case with checkpoint rule, documents, drafts, findings, User/Role), `ports.py` (LLMGateway, Embedder, VectorStore, CaseRepository, ObjectStorage, AuditLog), `rules.py` (deterministic SOP rule engine + `config/sop/*.yaml`) |
+| Use cases | `backend/app/use_cases/` | `ingest_document`, `extract_fields`, `draft_nota`, `check_consistency`, `route_request`, `run_pipeline` (orchestrator), `manage_case` (create/advance/risk-tier), `retrieval` helper |
+| Adapters | `backend/app/adapters/` | `llm_claude` (single audited model entry), `vector_pgvector` (+ in-memory twin), `repo_postgres` (cases/documents/artefacts tables; + in-memory twin), `storage_minio` (+ local twin), `embedder_hash` (Sprint-2 swap), `audit_jsonl` |
+| Infrastructure | `backend/app/infrastructure/` | `config.py` (adapter selection: `REPO_BACKEND`, `STORAGE_BACKEND`, `AUTH_MODE`), `container.py` (composition root), `security.py` (dev-header auth + OIDC seam, `require_roles`) |
+| API | `backend/app/api/routes.py` | Thin controllers; role guards per endpoint |
+| Frontend | `frontend/` | React + IBM Carbon; all styling via `src/styles/tokens.scss` (CI-enforced) |
+
+Every adapter has an in-memory/local twin, so the full test suite runs in milliseconds without infrastructure and identically against Postgres + pgvector in CI.
+
+## Roles
+
+`drafter` (ingest, draft), `reviewer` (ingest, draft, consistency, risk tier), `approver` (checkpoint sign-offs, risk tier), `auditor` (traces), `admin` (all). Dev mode reads `X-User-Id` / `X-User-Roles` headers; production switches `AUTH_MODE=oidc` (IdP wiring is the marked seam in `security.py`).
 
 ## Secure AI sandbox posture
 
-- Single audited entry point to the model (`app/agents/base.py`); model id configured via `DAM_MODEL` (default `claude-opus-4-8`, adaptive thinking).
+- Single audited entry point to the model (`adapters/llm_claude.py`); model id configured via `DAM_MODEL` (default `claude-opus-4-8`, adaptive thinking, structured outputs).
 - Enterprise API terms: prompts/outputs are not used for model training.
-- Documents stay in MinIO/Postgres inside the deployment boundary; only retrieved excerpts needed for the task are sent to the model.
-- Hash-based local embeddings by default — zero external embedding dependency until an enterprise embedder is approved.
-- Full audit trail satisfies the auditability requirement; replace JSONL with WORM storage for production.
+- Documents stay in MinIO/Postgres inside the deployment boundary; only retrieved excerpts needed for the task are sent to the model. Originals are preserved at `cases/{case_id}/{document_id}/{filename}`.
+- Hash-based local embeddings by default — zero external embedding dependency until an enterprise embedder is approved (Sprint 2).
+- Full audit trail satisfies the auditability requirement; WORM storage lands in Sprint 6.
 
-## Production hardening (known gaps in this scaffold)
+## Known gaps (tracked in SPRINT-PLAN.md)
 
-- Workflow case store is in-memory → move to Postgres tables.
-- AuthN/AuthZ (SSO, role-based sign-off identity) not yet wired.
-- MinIO upload of original files is configured but the storage call is left to implement in the ingestion pipeline.
-- Embeddings are hash-based placeholders — swap in an enterprise embedding model for real retrieval quality.
+- Embeddings are hash-based placeholders → Sprint 2 (enterprise embedder, hybrid retrieval, reranking, eval harness).
+- OIDC validation is a seam, not an implementation → wire the IdP before pilot.
+- Audit log is JSONL on disk → WORM object storage in Sprint 6.

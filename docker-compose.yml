@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: dam
       POSTGRES_DB: dam_governance
     ports:
-      - "5432:5432"
+      - "55432:5432"   # host 55432 — avoids collision with a local Postgres
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -21,8 +21,8 @@ services:
       MINIO_ROOT_USER: dam-admin
       MINIO_ROOT_PASSWORD: dam-secret
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "59000:9000"   # host 59000 — avoids collision with a local MinIO
+      - "59001:9001"
     volumes:
       - miniodata:/data
 

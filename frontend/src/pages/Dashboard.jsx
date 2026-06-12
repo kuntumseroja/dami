@@ -83,7 +83,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <strong>{c.title}</strong>
-              <div style={{ color: '#525252', fontSize: '0.875rem' }}>
+              <div className="dam-meta">
                 <code>{c.case_id}</code>
               </div>
             </div>
@@ -92,7 +92,6 @@ export default function Dashboard() {
               <Tag type="blue">{STAGE_LABELS[c.stage] || c.stage}</Tag>
               <Button
                 kind="tertiary"
-                size="sm"
                 onClick={() =>
                   api
                     .advanceCase(c.case_id, c.risk_tier === 'low' ? null : 'reviewer')
