@@ -44,8 +44,9 @@
 | 2.6 | Insufficient-source flagging: section gaps marked "Insufficient source material" (engine distinguishes its errors from missing inputs) | FR-1 coverage metric | Coverage ≥95% measured against template section list |
 | 2.7 | **Workflow lifecycle alignment** to PRD: submission intake → eligibility check → NOTA drafting → internal review → board preparation → decision → communication dispatch; entry/exit conditions per stage | FR-6 | `Case` stage machine matches PRD stages; migration for existing rows; tests updated |
 | 2.8 | Draft Generation Latency SLA instrumentation: P95 <5 min standard / <10 min large, measured over 30-day window | FR-1, AC-1.1, NFR | Latency recorded per draft; dashboard query |
+| 2.9 | **Multi-model router + self-host fallback pool** behind `LLMGateway`: role-based routing per [config/models.yaml](../config/models.yaml) — drafting → Qwen3-235B-A22B/32B, reasoning → DeepSeek-R1-Distill-Qwen-32B, fast extraction → Mistral Small 3.x, multimodal/edge → Gemma 3 27B; vLLM OpenAI-compatible serving adapter; policies RTE-001…004 (outage fallback, classification-forced tier, per-call audit, eval-gated activation) | FR-5, §11.2, R1/R2 | Router selects by role + policy; fallback model passes grounding gate + 2.4 regression suite before activation; every call audited with role/tier/model/version/policy |
 
-**Exit:** drafting is grounded with a hard gate, measured, and regression-protected; workflow speaks the PRD's language.
+**Exit:** drafting is grounded with a hard gate, measured, and regression-protected; workflow speaks the PRD's language; the platform survives a managed-tier outage on the self-host pool.
 
 ---
 

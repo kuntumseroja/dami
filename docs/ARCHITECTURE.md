@@ -43,13 +43,32 @@ The mechanism is the same for all three: every external dependency sits behind a
 
 | Port | Current adapter | AWS target | Databricks target | watsonx target |
 |---|---|---|---|---|
-| `LLMGateway` | Claude API (`llm_claude.py`, `claude-opus-4-8`) | Claude Platform on AWS / Bedrock (same port) | Databricks Model Serving / external-model endpoint | watsonx.ai inference |
+| `LLMGateway` | Claude API (`llm_claude.py`, `claude-opus-4-8`) + role-routed self-host pool (see Model mix below) | Claude Platform on AWS / Bedrock; self-host pool on EKS GPU / SageMaker | Databricks Model Serving (managed + self-host pool) | watsonx.ai inference |
 | `Embedder` | Hash placeholder (Sprint 2 swaps) | Bedrock / SageMaker endpoint | Databricks Model Serving embeddings | watsonx embeddings |
 | `VectorStore` | pgvector (`vector_pgvector.py`) | RDS/Aurora Postgres + pgvector | Databricks Vector Search | pgvector (co-located) |
 | `CaseRepository` | Postgres (`repo_postgres.py`) | RDS/Aurora Postgres | Lakebase / Postgres-compatible | Postgres |
 | `ObjectStorage` | MinIO (`storage_minio.py`, S3 API) | **S3 — same S3 API, config-only change** | Unity Catalog volumes / S3 | COS (S3 API) |
 | `AuditLog` | JSONL (`audit_jsonl.py`) | S3 Object Lock (WORM, Sprint 6.4) | Delta append-only table | COS Object Lock |
 | Compute | Docker Compose | EKS/ECS (containers unchanged) | Databricks Apps / jobs + external containers | Code Engine/OpenShift |
+
+## Model mix & routing
+
+The `LLMGateway` is a **router**, not a single client. Registry: [config/models.yaml](../config/models.yaml). Managed primary (Claude) with a **self-hosted fallback pool** routed per task role, served vLLM-class behind an OpenAI-compatible endpoint (portable to on-prem GPU, AWS EKS/SageMaker, Databricks Model Serving):
+
+| Task role | Used by | Primary (managed) | Fallback (self-host) |
+|---|---|---|---|
+| Drafting | NOTA descriptive sections (FR-1) | `claude-opus-4-8` | **Qwen3-235B-A22B** (or Qwen3-32B small-footprint) |
+| Reasoning specialist | Consistency analysis, contradiction detection (FR-2) | `claude-opus-4-8` | **DeepSeek-R1-Distill-Qwen-32B** |
+| Fast extraction / classification | Field extraction, doc classification, routing explanation (FR-4) | `claude-haiku-4-5` | **Mistral Small 3.x** |
+| Multimodal / edge | Scanned or image-heavy documents; edge / air-gapped sites | — | **Gemma 3 27B** (upgrade path: Gemma 4) |
+
+Routing policies (audited per call with the policy id that fired):
+- **RTE-001** managed-tier outage or rate-limit exhaustion → role fallback model
+- **RTE-002** document classification above threshold → self-host tier **forced** (links to Sprint 6.1 data classification)
+- **RTE-003** every routed call logs role, tier, model, version (PRD §11.2)
+- **RTE-004** fallback models pass the same grounding gate (FR-1) and the 2.4 regression suite **before activation** — no model joins the pool unevaluated
+
+Model-independent invariants: the 100% source-traceability gate, the judgment-section prohibition, and audit logging apply to every model in the mix. Reasoning-model thinking traces are logged to audit, never rendered to users.
 
 Rules that keep this true:
 
