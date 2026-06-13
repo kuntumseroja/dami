@@ -118,7 +118,7 @@
 
 | Q | Question | Owner | Needed by |
 |---|---|---|---|
-| Q1 | Infrastructure model (on-prem / private cloud / IBM managed) | BPI IT / IBM | Sprint 2 (2.1) |
+| Q1 | Infrastructure model (on-prem / private cloud / IBM managed). **Portability constraint: future deployment on AWS and Databricks (and watsonx) must remain feasible** — see ARCHITECTURE.md → Provider & deployment portability | BPI IT / IBM | Sprint 2 (2.1); 6.5 deployment automation stays container-based + config-only per target |
 | Q2 | Approved AI model(s) for sandbox. **Decision to date: Claude API (claude-opus-4-8) now; watsonx not in use but must remain deployable later** | IBM Delivery Lead | Sprint 2 (2.1) — `LLMGateway`/`Embedder` ports make a future watsonx adapter additive, never a rework |
 | Q3 | Complete SOP inventory + Phase-1 priority SOPs | DAM Legal/Compliance | Sprint 4 (4.1) — schedule SME workshops in Sprint 2 |
 | Q4 | Legal opinion on AI-generated content in signed artefacts | DAM Legal | Before pilot go-live (6.6), tracks R7 |

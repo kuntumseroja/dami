@@ -31,14 +31,32 @@ Every adapter has an in-memory/local twin, so the full test suite runs in millis
 
 `drafter` (ingest, draft), `reviewer` (ingest, draft, consistency, risk tier), `approver` (checkpoint sign-offs, risk tier), `auditor` (traces), `admin` (all). Dev mode reads `X-User-Id` / `X-User-Roles` headers; production switches `AUTH_MODE=oidc` (IdP wiring is the marked seam in `security.py`).
 
-## Model provider strategy
+## Provider & deployment portability
 
-**Current provider: Claude API** (`adapters/llm_claude.py`, `claude-opus-4-8`). **watsonx is not in use today, but future deployment on watsonx must remain feasible** — that is a standing constraint, not an open question:
+**Current stack: Claude API + self-hosted Postgres/pgvector/MinIO (Docker Compose).** Three future targets are standing constraints — none is in use today, all must remain reachable without core rework:
 
-- All model and embedding traffic flows through the `LLMGateway` and `Embedder` ports (`domain/ports.py`). No use case, domain rule, or API route knows which provider is behind them.
-- Adding watsonx later means writing `adapters/llm_watsonx.py` / `adapters/embedder_watsonx.py` and flipping config — an additive change, never a rework of the core.
-- Provider-specific features must not leak through the ports: prompts, structured-output contracts, and citation formats are defined at the use-case layer in provider-neutral terms. If a capability only one provider offers becomes load-bearing, that requires an explicit decision recorded here.
-- The PRD's integration touchpoint "IBM enterprise AI infrastructure (watsonx or equivalent)" is satisfied by this seam; the Q2 open question (approved model for the sandbox) selects the adapter, not the architecture.
+1. **watsonx** (model provider)
+2. **AWS** (infrastructure)
+3. **Databricks** (data/AI platform)
+
+The mechanism is the same for all three: every external dependency sits behind a port in `domain/ports.py`, so moving a target means writing an adapter and flipping config — additive, never a rework.
+
+| Port | Current adapter | AWS target | Databricks target | watsonx target |
+|---|---|---|---|---|
+| `LLMGateway` | Claude API (`llm_claude.py`, `claude-opus-4-8`) | Claude Platform on AWS / Bedrock (same port) | Databricks Model Serving / external-model endpoint | watsonx.ai inference |
+| `Embedder` | Hash placeholder (Sprint 2 swaps) | Bedrock / SageMaker endpoint | Databricks Model Serving embeddings | watsonx embeddings |
+| `VectorStore` | pgvector (`vector_pgvector.py`) | RDS/Aurora Postgres + pgvector | Databricks Vector Search | pgvector (co-located) |
+| `CaseRepository` | Postgres (`repo_postgres.py`) | RDS/Aurora Postgres | Lakebase / Postgres-compatible | Postgres |
+| `ObjectStorage` | MinIO (`storage_minio.py`, S3 API) | **S3 — same S3 API, config-only change** | Unity Catalog volumes / S3 | COS (S3 API) |
+| `AuditLog` | JSONL (`audit_jsonl.py`) | S3 Object Lock (WORM, Sprint 6.4) | Delta append-only table | COS Object Lock |
+| Compute | Docker Compose | EKS/ECS (containers unchanged) | Databricks Apps / jobs + external containers | Code Engine/OpenShift |
+
+Rules that keep this true:
+
+- **No provider/platform feature may leak through a port.** Prompts, structured-output contracts, citation formats, SQL, and storage semantics are defined at the use-case layer in neutral terms. A load-bearing single-provider capability requires an explicit decision recorded here.
+- **Everything ships as containers** with config-only environment differences (the 12-factor seam already enforced by `infrastructure/config.py` adapter selection).
+- **Postgres dialect discipline**: no extensions beyond pgvector; SQL stays ANSI-compatible where possible so RDS/Aurora and Postgres-compatible targets are drop-ins.
+- The PRD's integration touchpoint "IBM enterprise AI infrastructure (watsonx or equivalent)" and open question Q1 (on-prem / private cloud / managed) select **adapters and a deployment profile, not an architecture**.
 
 ## Secure AI sandbox posture
 
