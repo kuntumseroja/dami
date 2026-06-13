@@ -31,6 +31,15 @@ Every adapter has an in-memory/local twin, so the full test suite runs in millis
 
 `drafter` (ingest, draft), `reviewer` (ingest, draft, consistency, risk tier), `approver` (checkpoint sign-offs, risk tier), `auditor` (traces), `admin` (all). Dev mode reads `X-User-Id` / `X-User-Roles` headers; production switches `AUTH_MODE=oidc` (IdP wiring is the marked seam in `security.py`).
 
+## Model provider strategy
+
+**Current provider: Claude API** (`adapters/llm_claude.py`, `claude-opus-4-8`). **watsonx is not in use today, but future deployment on watsonx must remain feasible** — that is a standing constraint, not an open question:
+
+- All model and embedding traffic flows through the `LLMGateway` and `Embedder` ports (`domain/ports.py`). No use case, domain rule, or API route knows which provider is behind them.
+- Adding watsonx later means writing `adapters/llm_watsonx.py` / `adapters/embedder_watsonx.py` and flipping config — an additive change, never a rework of the core.
+- Provider-specific features must not leak through the ports: prompts, structured-output contracts, and citation formats are defined at the use-case layer in provider-neutral terms. If a capability only one provider offers becomes load-bearing, that requires an explicit decision recorded here.
+- The PRD's integration touchpoint "IBM enterprise AI infrastructure (watsonx or equivalent)" is satisfied by this seam; the Q2 open question (approved model for the sandbox) selects the adapter, not the architecture.
+
 ## Secure AI sandbox posture
 
 - Single audited entry point to the model (`adapters/llm_claude.py`); model id configured via `DAM_MODEL` (default `claude-opus-4-8`, adaptive thinking, structured outputs).

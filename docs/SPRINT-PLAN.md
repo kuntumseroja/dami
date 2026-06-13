@@ -36,7 +36,7 @@
 
 | # | Story | PRD ref | Acceptance criteria |
 |---|---|---|---|
-| 2.1 | Approved enterprise embedding model behind `Embedder` port (PRD anticipates watsonx-class private deployment — resolve **Q2** with IBM delivery lead) | FR-5, Q1/Q2 | Config-switched provider; no governance text leaves the boundary |
+| 2.1 | Approved enterprise embedding model behind `Embedder` port. **Provider strategy: Claude API now; watsonx is a future deployment option, not a current dependency** — the port keeps either reachable without core changes (resolve **Q2** with IBM delivery lead) | FR-5, Q1/Q2 | Config-switched provider; no governance text leaves the boundary; a watsonx adapter would be additive only |
 | 2.2 | Semantic chunking — structure-aware (headings/clauses/tables) for PDF & DOCX, 512–1024 tokens | FR-1 | Numbered clauses never split; bilingual test docs |
 | 2.3 | Hybrid retrieval (dense + full-text, reciprocal-rank fusion) + reranking stage behind `RerankerPort` | FR-1 | Hybrid+rerank beats dense-only on golden set |
 | 2.4 | **20-case regression test suite** (anonymized historical NOTAs) + eval harness in CI: RAG Retrieval Relevance **≥0.75 avg / P10 ≥0.60**; model updates blocked on >3pp regression | FR-1 metrics, AC-1.6 | Nightly CI job; scorecard output; update gate enforced |
@@ -119,7 +119,7 @@
 | Q | Question | Owner | Needed by |
 |---|---|---|---|
 | Q1 | Infrastructure model (on-prem / private cloud / IBM managed) | BPI IT / IBM | Sprint 2 (2.1) |
-| Q2 | Approved AI model(s) for sandbox (watsonx Granite / fine-tuned / other) | IBM Delivery Lead | Sprint 2 (2.1) — `LLMGateway`/`Embedder` ports keep this swappable |
+| Q2 | Approved AI model(s) for sandbox. **Decision to date: Claude API (claude-opus-4-8) now; watsonx not in use but must remain deployable later** | IBM Delivery Lead | Sprint 2 (2.1) — `LLMGateway`/`Embedder` ports make a future watsonx adapter additive, never a rework |
 | Q3 | Complete SOP inventory + Phase-1 priority SOPs | DAM Legal/Compliance | Sprint 4 (4.1) — schedule SME workshops in Sprint 2 |
 | Q4 | Legal opinion on AI-generated content in signed artefacts | DAM Legal | Before pilot go-live (6.6), tracks R7 |
 | Q5 | SOE submission format/protocol, standard template | DAM / SOE Relations | Sprint 2 (2.2 chunking), Sprint 4 intake |
