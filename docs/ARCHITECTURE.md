@@ -55,18 +55,29 @@ The mechanism is the same for all three: every external dependency sits behind a
 
 The `LLMGateway` is a **router**, not a single client. Registry: [config/models.yaml](../config/models.yaml). Managed primary (Claude) with a **self-hosted fallback pool** routed per task role, served vLLM-class behind an OpenAI-compatible endpoint (portable to on-prem GPU, AWS EKS/SageMaker, Databricks Model Serving):
 
-| Task role | Used by | Primary (managed) | Fallback (self-host) |
+Every role defines **both tiers** — an online foundation API model and a self-host model — so any role can run in either deployment profile:
+
+| Task role | Used by | Online API (managed) | Self-host |
 |---|---|---|---|
 | Drafting | NOTA descriptive sections (FR-1) | `claude-opus-4-8` | **Qwen3-235B-A22B** (or Qwen3-32B small-footprint) |
-| Reasoning specialist | Consistency analysis, contradiction detection (FR-2) | `claude-opus-4-8` | **DeepSeek-R1-Distill-Qwen-32B** |
+| Reasoning specialist | Consistency analysis, contradiction detection (FR-2) | `claude-opus-4-8` (adaptive thinking) | **DeepSeek-R1-Distill-Qwen-32B** |
 | Fast extraction / classification | Field extraction, doc classification, routing explanation (FR-4) | `claude-haiku-4-5` | **Mistral Small 3.x** |
-| Multimodal / edge | Scanned or image-heavy documents; edge / air-gapped sites | — | **Gemma 3 27B** (upgrade path: Gemma 4) |
+| Multimodal / edge | Image-heavy documents; edge / air-gapped sites | `claude-opus-4-8` (vision, high-res) | **Gemma 3 27B** (upgrade path: Gemma 4) |
+
+**Pre-LLM document processing** (ingestion, ahead of semantic chunking — these convert documents to grounded structure, they never generate content):
+
+| Stage | Engine | Role |
+|---|---|---|
+| Structure parsing | **Granite-Docling** (self-host) | Layout, tables, reading order, numbered-clause structure → structured markdown consumed by chunking (2.2) |
+| OCR | **Tesseract** (self-host, `ind` + `eng`) | Text layer for scanned/born-paper pages, then through Docling |
+| Escalation | multimodal/edge role | Low-confidence OCR or image-heavy pages → page-level model understanding (output still passes the grounding gate) |
 
 Routing policies (audited per call with the policy id that fired):
 - **RTE-001** managed-tier outage or rate-limit exhaustion → role fallback model
 - **RTE-002** document classification above threshold → self-host tier **forced** (links to Sprint 6.1 data classification)
 - **RTE-003** every routed call logs role, tier, model, version (PRD §11.2)
-- **RTE-004** fallback models pass the same grounding gate (FR-1) and the 2.4 regression suite **before activation** — no model joins the pool unevaluated
+- **RTE-004** any model joining a role (either tier) passes the grounding gate (FR-1) and the 2.4 regression suite **before activation** — no model joins the pool unevaluated
+- **RTE-005** edge/air-gapped profile pins all roles to self-host; document processing stays fully local (Docling + Tesseract)
 
 Model-independent invariants: the 100% source-traceability gate, the judgment-section prohibition, and audit logging apply to every model in the mix. Reasoning-model thinking traces are logged to audit, never rendered to users.
 
