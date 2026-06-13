@@ -1,62 +1,63 @@
-# Requirements traceability — DAM quick-wins mandate
+# Requirements traceability — PRD ↔ implementation ↔ sprint plan
 
-Target: ~30% productivity improvement.
-Status legend: ✅ delivered · 🟦 partial (working, maturing in a planned sprint) · ⬜ planned · 🗺 roadmap (phase 2+).
-Last updated after **Sprint 1** (commit `cf56385`).
+**Source of truth:** [dam-prd.pdf](../dam-prd.pdf) (PRD v1.0, June 2026). Requirement ids, priorities, acceptance criteria (AC-x.y), and metric thresholds below are the PRD's.
+Status legend: ✅ meets PRD spec · 🟦 partial (working; gap named, delivery story scheduled) · ⬜ planned · 🗺 Phase 2.
+Last updated after **Sprint 1** (`cf56385`) and PRD alignment.
 
-## 1. Mandate requirements → implementation → verification
+## 1. Functional requirements (PRD §7–8) → implementation → delivery
 
-| # | Requirement | Implementation | Verification | Status | Remaining work |
+| FR | Requirement (priority) | Implemented today | Known gaps vs PRD | Delivering stories | Done by |
 |---|---|---|---|---|---|
-| 1 | **AI-assisted drafting engine** — NOTA first drafts from submissions, templates, historical notes; descriptive sections only, human keeps judgment | `use_cases/draft_nota.py` — RAG-grounded structured drafting; judgment sections always emitted empty; drafts persisted as `nota_draft` artefacts; `POST /api/agents/draft` (drafter/reviewer roles) | System-prompt hard rules (source-only, no analysis, `[DATA TIDAK TERSEDIA]` on gaps); grounding refs per section | 🟦 | Sprint 3: template store (3.1), grounding verifier (3.2), section review UX (3.3) |
-| 2 | **Cross-document consistency checker** — review vs board vs decision vs communication; inconsistencies, outdated refs, missing updates | `use_cases/check_consistency.py` — typed findings with quoted excerpts + resolutions, persisted as `consistency_report` artefacts; `POST /api/agents/consistency/{case_id}` | Structured output schema enforces excerpt-pair + severity per finding | 🟦 | Sprint 3: pairwise scale strategy, dedup, severity calibration (3.4) |
-| 3 | **Version control + single source of truth** — master hierarchy, propagation | `domain/models.py:GovernanceDocument` (`is_master`, `parent_doc_id`, `version`); ingestion marks submissions master; `documents` table persists hierarchy; consistency agent treats submission as truth | `test_ingestion_stores_original_and_registers_document` asserts `is_master` | 🟦 | Sprint 3: stale-marking + propagation diff view (3.5) |
-| 4 | **Rule-based eligibility & routing** — "approval required?", "which SOP?" from delegation of authority + thresholds | `domain/rules.py` + `config/sop/routing-rules.yaml` (SOP selection, approval thresholds APR-001…004, risk rules RSK-001…003); `use_cases/route_request.py` — rules decide, LLM only explains; decisions persisted | `test_routing_rules_low_value_lease_is_automated`, `test_routing_rules_high_value_needs_board` | ✅ (scaffold rulebook) | Sprint 4: full SOP digitization with SMEs (4.1), what-if simulator (4.2) |
-| 5 | **Secure AI sandbox** — no leakage, no external training, auditability | `adapters/llm_claude.py` single audited model entry (`claude-opus-4-8`, adaptive thinking); originals stay in MinIO (`adapters/storage_minio.py`), data in Postgres; local hash embeddings until enterprise embedder approved; append-only audit (`adapters/audit_jsonl.py`) | MinIO round-trip verified; every use case writes an audit record with sources/model | 🟦 | Sprint 2: enterprise embedder (2.1); Sprint 6: injection guards (6.1), PII redaction (6.2), WORM audit (6.4) |
-| 6 | **Integrated workflow + document orchestration** — submission → evaluation → board → decision → communication with checkpoints | `domain/models.py:Case.advance()` — checkpoint rule in the entity; `use_cases/manage_case.py` binds authenticated sign-off identity; `use_cases/run_pipeline.py` orchestrates extraction → routing → drafting → consistency; Postgres-persisted (`adapters/repo_postgres.py`) | `test_checkpoint_requires_approver_role` (403 without approver; sign-off actor = authenticated user), suite green on Postgres | ✅ | Sprint 4: notifications/queues (4.3), idempotent reruns (4.5) |
-| 7 | **SOP digitization + decision routing engine** — SOPs, decision trees, escalation paths | YAML rulebook `config/sop/routing-rules.yaml` (3 SOPs + fallback); rule ids recorded per decision | Routing tests; `rules_fired` in every `RoutingDecision` and audit record | 🟦 | Sprint 4: one YAML tree per real SOP incl. escalation/exceptions (4.1), SME sign-off |
-| 8 | **Risk-based automation segmentation** — low-risk fully automated, complex human-in-the-loop | `RiskTier` + risk rules (RSK-001…003) set tier from rules; `Case.requires_signoff` enforces checkpoints only for medium/high; role-gated tier override (`POST /api/cases/{id}/risk-tier`) | `test_risk_tier_change_requires_role`; checkpoint test; low-tier cases advance with no sign-off | ✅ | Sprint 4: justification-mandatory overrides + override reporting (4.4), hands-free E2E demo (4.6) |
-| 9 | **Enterprise governance platform across BPI** (DAM/DIM/DSI) | — | — | 🗺 | Phase 2; informed by pilot data (Sprint 6.6) |
-| 10 | **Agentic governance system** — agents draft/validate/route/flag; humans only where needed | `use_cases/run_pipeline.py` is the seed: full agent pipeline per case, gated by risk tier | Pipeline endpoint wired; agent steps audited with child traces | 🟦 (seed) | Phase 2/3; Sprint 4.6 proves the low-risk autonomous path |
+| FR-1 | AI-Assisted Drafting Engine (P1) | `use_cases/draft_nota.py`: RAG-grounded descriptive drafting, judgment sections emitted empty, per-section source refs, drafts persisted + audited | Traceability is per-section, PRD demands **per-sentence 100% hard gate** (AC-1.3) with suppression placeholder; no paragraph accept/edit/reject (AC-1.5); no contamination scan (AC-1.4); no latency SLA measurement (AC-1.1); no 20-case regression suite (AC-1.6) | 2.2–2.6, 2.8, 3.1–3.3 | **Sprint 3** |
+| FR-2 | Cross-Document Consistency Checker (P1) | `use_cases/check_consistency.py`: typed findings with excerpt pairs + resolutions, persisted + audited | Severity scheme is critical/major/minor — PRD prescribes **8-type taxonomy with Critical/Warning/Informational** (configurable); no resolution workflow (Resolved/Accepted-as-is/Deferred); no auto-trigger + acknowledgment gate (AC-2.7); no **board-stage Critical block** (AC-2.5); no precision/recall injection tests (AC-2.2/2.3) | 3.4–3.7, 3.9 | **Sprint 3** |
+| FR-3 | Version Control + Single Source of Truth (P1) | `GovernanceDocument` hierarchy (`is_master`, `parent_doc_id`, `version`) persisted; submissions auto-master (test-asserted) | No version history records, checkout/check-in locking, diff view, post-queue immutability, or propagation check on master edit | 3.8 | **Sprint 3** |
+| FR-4 | Rule-Based Eligibility & SOP Routing (P1) | `domain/rules.py` + YAML rulebook; rules decide / LLM explains; fired rule ids logged; routing tests green | Output lacks **pre-conditions + expected timeline**; no ambiguity→human-resolver path; rules not editable by SOP owners without release; rule *version* not recorded; no <30 s SLA measurement | 4.2–4.4 | **Sprint 4** |
+| FR-5 | Secure Enterprise AI Sandbox (P1) | Single audited model entry (`adapters/llm_claude.py`), MinIO/Postgres boundary, RBAC skeleton, append-only audit | Model/embedder pending Q1/Q2 approval (ports keep swappable); no **data classification layer**, IT monitoring dashboard, network-level public-AI block, or red-team cycle | 2.1, 5.3, 6.1–6.3 | **Sprint 6** |
+| FR-6 | Integrated Workflow & Orchestration (P1) | Stage machine with risk-tier checkpoints in `Case` entity; authenticated sign-offs; Postgres-persisted; 403/identity tested | Stages don't match PRD lifecycle (**submission intake → eligibility check → NOTA drafting → internal review → board preparation → decision → communication dispatch**); no entry/exit conditions, owners, notifications, parallel workstreams + merge gates, SLA bottleneck alerts, status dashboard | 2.7, 4.7, 5.1 | **Sprint 4** (dashboard 5.1) |
+| FR-7 | SOP Digitization & Decision Routing (P2) | YAML rulebook format, 3 scaffold SOPs, fired-rule audit | No authoring environment, SOP versioning/approval lifecycle (only-approved-active), migration coverage dashboard, or non-technical tree visualization; SOP version not recorded per evaluation | 4.1, 4.2, 4.4 | **Sprint 4** |
+| FR-8 | Risk-Based Automation Segmentation (P2) | `RiskTier` rules drive checkpoints; role-gated overrides (tested); low-risk advances unattended | Scoring is amount+type only — PRD requires **multi-dimensional** (value, entity risk, novelty, precedent, regulatory exposure); thresholds need dual-approval; no automation-ratio metric; no auto-escalation/incident on automated-flow errors | 4.4–4.6, 4.8 | **Sprint 4** |
+| FR-9 | BPI-wide Enterprise Platform (P3) | Port-based modular architecture (PRD §10.1 "modular for BPI-wide extensibility") is the enabling decision | Multi-tenancy, shared template/SOP libraries, BPI dashboard | Phase 2 PRD (out of scope §13) | 🗺 |
+| FR-10 | Agentic Governance System (P3) | `use_cases/run_pipeline.py` orchestrator seed; full agent action audit | Autonomous monitoring/triggering, validation agent, exception-only review interface | 4.8 proves the low-risk autonomous path; rest Phase 2 | 🗺 |
 
-## 2. Pain points → mitigations
+## 2. Non-functional requirements (PRD §9) → delivery
 
-| Pain point | Mitigation in platform | Requirements |
+| NFR | Spec | Status / story |
 |---|---|---|
-| **A. Inconsistency / multiple versions of truth** (~30% senior time on reconciliation) | Consistency agent + master-document hierarchy; submission is the canonical record | #2, #3 |
-| **B. Over-documentation / defensive artefacts** (80% descriptive) | Drafting agent does the descriptive 80%; judgment sections structurally reserved for humans | #1 |
-| **C. Fragmented workflow / unclear SOP routing** | Deterministic rulebook answers "which SOP / approval needed?"; workflow engine drives stage progression with checkpoints | #4, #6, #7 |
-| **D. Manual repetitive drafting** | Ingestion + extraction pipeline feeds drafting; same data never re-typed | #1, RAG layer |
-| **E. No controlled AI / data environment** | Self-hosted boundary (Postgres/MinIO), single audited model entry, grounded RAG, no training on data | #5 |
-| **F. Personal liability** | Rules decide / AI explains; codified YAML rulebook with fired-rule ids; sign-off identity from authenticated user only; low-risk flows remove the human entirely; full per-case trace (`GET /api/cases/{id}/trace`) | #4, #8, audit |
+| NOTA draft latency | <5 min standard (<10 min large), P95 over 30 days | ⬜ 2.8 |
+| Consistency check latency | <2 min (4-artefact set) | ⬜ 3.9 instrumentation |
+| Routing latency | <30 s from intake | ⬜ 4.3 |
+| Data residency | All processing in DAM-approved infra, no external transmission | 🟦 boundary exists; Q1/Q2 + 6.2 close it |
+| Model isolation | Isolated compute, no shared inference | ⬜ Q2 + 6.1 |
+| Access control | RBAC via DAM IdP, least privilege | 🟦 roles enforced; OIDC seam → IdP wiring pre-pilot |
+| Full action log | Every user/system/AI action, tamper-evident | 🟦 append-only JSONL → 6.4 tamper-evident |
+| Log retention | ≥7 years (Indonesian governance/financial regs) | ⬜ 6.4 |
+| Availability / backup | 99.5% business hours; daily backup, 30-day PITR | ⬜ 6.5 |
+| Hallucination prevention | Unsourced generation **not permitted** | 🟦 prompt-level today → 2.5 hard gate |
+| Training | Analyst workflow operable with <4 h training | ⬜ 5.6 |
+| SOP enforcement | No file past routing without recorded SOP pathway decision | 🟦 decisions recorded → 2.7 stage gate makes it structural |
 
-## 3. Sprint 1 stories → evidence (commit `cf56385`)
+## 3. Pain points (PRD §5) → mitigations
 
-| Story | Acceptance evidence |
+| Pain | Mitigation | FRs |
+|---|---|---|
+| A — Inconsistency / multiple truths (~30% senior time) | Consistency checker + master hierarchy + board-stage Critical gate | FR-2, FR-3 |
+| B — Over-documentation as liability shield | AI does the descriptive 80%; judgment structurally human; per-paragraph attribution | FR-1 |
+| C — Fragmented workflow / routing (under- & over-routing) | Rule engine suppresses unnecessary approvals; ambiguity → designated resolver; PRD lifecycle with gates | FR-4, FR-6, FR-7 |
+| D — Repetitive drafting (80% restatement) | Drafting engine + ingestion/extraction; <5 min first draft | FR-1 |
+| E — Uncontrolled AI (hallucination, leakage, no audit) | Sandbox + 100% traceability gate + classification + network block + complete AI interaction log | FR-5, FR-1 |
+| F — Personal liability (critical differentiator) | Codified rules with versions, dual-approval changes, authenticated sign-offs, automation removes humans from low-risk steps, 7-yr attributable audit | FR-4, FR-8, NFRs |
+
+## 4. Sprint 1 evidence (commit `cf56385`)
+
+| Story | Evidence |
 |---|---|
-| 1.1 Clean architecture | `domain/` has no framework imports; use cases depend on `domain/ports.py` only; adapters carry in-memory/local twins; 7/7 tests pass |
-| 1.2 Postgres persistence | `cases`/`documents`/`artefacts` tables (`adapters/repo_postgres.py`); identical suite green vs pgvector/pg16; rows verified post-run |
-| 1.3 MinIO storage | Round-trip verified on live MinIO; `storage_key` populated and asserted in ingestion test |
-| 1.4 Auth skeleton | 401 unauthenticated (`test_unauthenticated_request_rejected_outside_dev`); 403 reviewer at checkpoint; sign-off actor = authenticated approver; OIDC seam in `infrastructure/security.py` |
-| 1.5 Token compliance | Zero hardcoded hex in `src/` (CI grep gate); styling exclusively via `frontend/src/styles/tokens.scss`; 48px interactive elements |
-| 1.6 CI | `.github/workflows/ci.yml`: ruff + memory tests + Postgres-service tests + frontend build + token gate |
+| 1.1 Clean architecture | Framework-free `domain/`; ports-only use cases; adapter twins; 7/7 tests — enables PRD §10.1 "modular architecture" + "configurable rule engine" |
+| 1.2 Postgres persistence | `cases`/`documents`/`artefacts` tables; suite green on pgvector/pg16 |
+| 1.3 MinIO storage | Round-trip verified; `storage_key` asserted in tests |
+| 1.4 Auth skeleton | 401/403 tested; sign-off identity = authenticated approver (PRD: attributable actions) |
+| 1.5 Token compliance | Zero hardcoded hex (CI-enforced); DESIGN-IBMC tokens |
+| 1.6 CI | ruff + dual-backend tests + build + token gate |
 
-## 4. Requirements → delivering sprint stories
+## 5. PRD open questions gating delivery (§14)
 
-Which [SPRINT-PLAN.md](SPRINT-PLAN.md) stories deliver each requirement, and the sprint after which it is considered **done** (pilot-ready; Sprint 6 hardens and measures everything).
-
-| # | Requirement | Foundation (✅ done, Sprint 1) | Delivering stories | Done by |
-|---|---|---|---|---|
-| 1 | AI drafting engine | Drafting use case, artefact persistence (1.1, 1.2) | 2.1–2.4 retrieval quality (the ceiling on draft accuracy) · 2.6 per-sentence citations · **3.1** template store · **3.2** grounding verifier · **3.3** section review UX · 5.4 interaction states | **Sprint 3** |
-| 2 | Consistency checker | Consistency use case, typed findings (1.1, 1.2) | 2.1–2.4 retrieval · **3.4** pairwise scale + dedup + severity calibration · **3.6** side-by-side excerpt UI | **Sprint 3** |
-| 3 | Version control + SSOT | Master hierarchy persisted in `documents` table (1.2) | **3.5** stale-marking on master change + propagation diff view | **Sprint 3** |
-| 4 | Rule-based eligibility & routing | Rule engine + thresholds, tested (1.1) | **4.1** full SOP digitization with SMEs · **4.2** what-if rule simulator | **Sprint 4** |
-| 5 | Secure AI sandbox | Single model entry, MinIO/Postgres boundary, audit trail, auth (1.1–1.4) | **2.1** enterprise embedder inside the boundary · **6.1** prompt-injection guards · **6.2** PII redaction · **6.3** cost/latency observability · **6.4** WORM audit | **Sprint 6** |
-| 6 | Workflow + document orchestration | Stage machine with checkpoints, authenticated sign-offs, Postgres-persisted, tested (1.1, 1.2, 1.4) | **4.3** sign-off queues + notifications · **4.5** idempotent pipeline reruns · 5.2 case detail UI | **Sprint 4** |
-| 7 | SOP digitization + routing engine | YAML rulebook format + 3 scaffold SOPs (1.1) | **4.1** one decision tree per real SOP incl. escalation paths, SME sign-off · **4.2** simulator | **Sprint 4** |
-| 8 | Risk-based automation segmentation | Risk tiers drive checkpoints; role-gated overrides, tested (1.1, 1.4) | **4.4** justification-mandatory overrides + reporting · **4.6** hands-free low-risk flow end-to-end | **Sprint 4** |
-| — | ~30% productivity target | Metrics defined in SPRINT-PLAN.md | 2.5 eval harness baselines retrieval · **6.6** two-week pilot measuring all success metrics vs baseline | **Sprint 6** (measured) |
-| 9 | BPI-wide platform (DAM/DIM/DSI) | Port-based architecture makes artefacts/workflows reusable (1.1) | Out of 6-sprint scope; scoping informed by 6.6 pilot report | Phase 2 |
-| 10 | Agentic governance | Orchestrator pipeline seed (1.1) | **4.6** proves the autonomous low-risk path; full agentic operation | Phase 2/3 |
-
-Reading the matrix by sprint: **Sprint 3 closes requirements 1–3** (drafting, consistency, SSOT), **Sprint 4 closes 4 and 6–8** (routing, workflow, SOPs, risk automation), **Sprint 6 closes 5** (sandbox hardening) **and proves the 30% target**. Sprints 2 and 5 are enablers — retrieval quality underneath requirements 1–2, UI/explainability across all of them.
+Q1 infra model & Q2 approved models → Sprint 2 · Q3 SOP inventory → Sprint 4 (workshops Sprint 2) · Q4 legal opinion → pre-pilot (R7) · Q5 SOE submission format → Sprints 2/4 · Q6 pilot users → Sprint 6. Tracked in [SPRINT-PLAN.md](SPRINT-PLAN.md) §Dependencies.
