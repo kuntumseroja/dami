@@ -31,3 +31,6 @@ data/
 transcription/*.transcript.json
 transcription/*.transcript.md
 *.aac
+
+# Local run
+.run/

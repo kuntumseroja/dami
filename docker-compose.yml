@@ -1,3 +1,13 @@
+# Port strategy
+# ─────────────────────────────────────────────────────────────────────────────
+# Services talk to each other INSIDE the compose network by name on their
+# container ports (db:5432, minio:9000, backend:8000) — those need NO host
+# ports. We publish to the host ONLY what you open from a browser/CLI:
+#   3010  frontend  (browser)
+#   8010  backend   (browser /api + http://localhost:8010/docs)
+# db and minio stay internal-only, so they can never conflict with a local
+# Postgres/MinIO. Uncomment their ports blocks only if you need psql / the
+# MinIO console from the host (debug). Host ports match ./start.sh.
 services:
   db:
     image: pgvector/pgvector:pg16
@@ -5,8 +15,10 @@ services:
       POSTGRES_USER: dam
       POSTGRES_PASSWORD: dam
       POSTGRES_DB: dam_governance
-    ports:
-      - "55432:5432"   # host 55432 — avoids collision with a local Postgres
+    expose:
+      - "5432"            # internal only — reached as db:5432
+    # ports:              # uncomment for host psql access (host 55432)
+    #   - "55432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -20,9 +32,12 @@ services:
     environment:
       MINIO_ROOT_USER: dam-admin
       MINIO_ROOT_PASSWORD: dam-secret
-    ports:
-      - "59000:9000"   # host 59000 — avoids collision with a local MinIO
-      - "59001:9001"
+    expose:
+      - "9000"            # internal only — reached as minio:9000
+      - "9001"
+    # ports:              # uncomment for host MinIO console (host 59000/59001)
+    #   - "59000:9000"
+    #   - "59001:9001"
     volumes:
       - miniodata:/data
 
@@ -38,7 +53,7 @@ services:
       - ./config:/config:ro
       - auditdata:/app/data/audit
     ports:
-      - "8000:8000"
+      - "8010:8000"       # host 8010 → container 8000
     depends_on:
       db:
         condition: service_healthy
@@ -46,9 +61,10 @@ services:
   frontend:
     build: ./frontend
     environment:
-      VITE_API_URL: http://backend:8000
+      PORT: "3010"
+      VITE_API_URL: http://backend:8000   # vite proxies /api here over the internal network
     ports:
-      - "5173:5173"
+      - "3010:3010"       # host 3010 → container 3010
     depends_on:
       - backend
 
