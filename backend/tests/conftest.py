@@ -6,7 +6,9 @@ os.environ.setdefault("REPO_BACKEND", "memory")
 os.environ.setdefault("STORAGE_BACKEND", "local")
 os.environ.setdefault("AUTH_MODE", "dev")
 os.environ.setdefault("DAM_ENV", "test")
+os.environ.setdefault("DOC_SOURCE", "local")
 os.environ.setdefault("LOCAL_STORAGE_PATH", "./.test-data/objects")
+os.environ.setdefault("LOCAL_SOURCE_PATH", "./.test-data/source")
 os.environ.setdefault("DAM_AUDIT_LOG_PATH", "./.test-data/audit")
 
 import pytest

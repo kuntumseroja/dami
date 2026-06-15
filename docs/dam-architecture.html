@@ -151,6 +151,7 @@
   <nav>
     <a href="#arch">Architecture</a>
     <a href="#models">Model foundation</a>
+    <a href="#governance">Governance &amp; security</a>
     <a href="#poc">PoC features</a>
     <a href="#plan">Plan</a>
     <a href="#metrics">Metrics</a>
@@ -271,6 +272,7 @@
           <div class="node adapter"><b>MinIO / S3</b><span>original files</span></div>
           <div class="node adapter"><b>JSONL audit</b><span>→ WORM (S6)</span></div>
           <div class="node adapter"><b>Docling + Tesseract</b><span>document understanding</span></div>
+          <div class="node adapter"><b>OneDrive / SharePoint</b><span>Microsoft Graph source</span></div>
         </div>
       </div>
       <div class="flow-arrow">▼</div>
@@ -332,6 +334,35 @@
     </div>
 
     <div class="note"><b>Routing policies (audited per call):</b> RTE-001 managed outage → self-host fallback · RTE-002 sensitive document → self-host tier forced · RTE-003 log role/tier/model/version/policy · RTE-004 no model joins a role until it passes the 20-case regression suite · RTE-005 edge profile pins all roles self-host. Grounding gate, judgment prohibition, and audit apply to <b>every</b> model.</div>
+  </section>
+
+  <!-- AI GOVERNANCE & INFORMATION SECURITY -->
+  <section id="governance">
+    <div class="eyebrow">AI governance &amp; information security</div>
+    <h2 class="sec-title">Governed AI, secured data</h2>
+    <p class="sec-sub">A governance platform must govern its own AI and data at least as rigorously as the documents it processes. These controls map to PRD §10.1, §11, and the NFRs — and form the pre-go-live legal &amp; compliance review pack. Full reference: <a href="AI-GOVERNANCE-AND-SECURITY.md">AI-GOVERNANCE-AND-SECURITY.md</a>.</p>
+
+    <h3 style="font-size:20px; margin:0 0 var(--sp4)">AI governance</h3>
+    <div class="grid-3">
+      <div class="card accent"><b>AI never owns a decision</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Rules decide; the model only explains and can't override a fired rule. Humans keep the judgment sections — AI text there is a Sev-1 incident.</p></div>
+      <div class="card accent"><b>Grounded or suppressed</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">100% source traceability as a hard gate — an unsourced sentence is replaced with a manual-input placeholder, never shown.</p></div>
+      <div class="card accent"><b>Every call attributable</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Role, tier, model id + version, identity, sources, and fired rules logged. Reasoning traces captured, never rendered.</p></div>
+      <div class="card accent"><b>Model-change governance</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">No production model change without documented approval; a model joins a role only after passing the 20-case regression suite (RTE-004).</p></div>
+      <div class="card accent"><b>No external training or leakage</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Inference inside the DAM boundary; enterprise terms on the managed tier; the self-host tier keeps everything local.</p></div>
+      <div class="card accent"><b>Red-team before go-live</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Hallucination, boundary cases, and document-borne prompt injection tested pre-launch and at every major model update.</p></div>
+    </div>
+
+    <h3 style="font-size:20px; margin:var(--sp7) 0 var(--sp4)">Information security</h3>
+    <div class="grid-3">
+      <div class="card"><b>Data residency</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">All content processed and stored within DAM-approved infrastructure; isolated inference, no shared tenancy.</p></div>
+      <div class="card"><b>Tenant isolation</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Entity scoping (DAM/DIM/DSI) on every record; cross-tenant access returns not-found. <span class="badge b-ok">seam live</span></p></div>
+      <div class="card"><b>Data classification</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Public→restricted on every document at intake; gates which model tier may process it. <span class="badge b-ok">seam live</span></p></div>
+      <div class="card"><b>RBAC + authenticated sign-off</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Least-privilege roles via DAM's IdP; sign-off identity from the authenticated user, never input.</p></div>
+      <div class="card"><b>Tamper-evident audit, 7-yr</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Append-only log of every user/system/AI action; WORM storage; retention per Indonesian financial regulation.</p></div>
+      <div class="card"><b>Public-AI network block</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Formal policy cutover plus a network-level block on submission content to external AI endpoints.</p></div>
+    </div>
+
+    <div class="note"><b>Document interface — OneDrive &amp; SharePoint:</b> DAM's documents live in Microsoft 365 (OneDrive today, with a SharePoint library as the governed target). The platform pulls submissions and SOPs through the Microsoft Graph <code>DocumentSource</code> connector into the same ingestion pipeline — identical chunking, classification, entity scope, and audit as uploads — so the system becomes the single authorized intake channel (Risk R6). App-only auth; tokens never enter the sandbox. Under the edge / air-gapped profile the source detaches and the platform runs with zero external egress.</div>
   </section>
 
   <!-- POC FEATURES -->

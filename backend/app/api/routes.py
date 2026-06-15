@@ -23,6 +23,7 @@ from app.use_cases.draft_nota import draft_nota
 from app.use_cases.ingest_document import ingest_document
 from app.use_cases.route_request import route_request
 from app.use_cases.run_pipeline import run_case_pipeline
+from app.use_cases.sync_source import sync_from_source
 
 router = APIRouter(prefix="/api")
 
@@ -127,6 +128,38 @@ async def ingest(
         embedder=c.embedder, vectors=c.vectors, storage=c.storage,
         repository=c.repository, audit=c.audit,
         entity=user.entity, classification=classification,
+    )
+
+
+@router.get("/sources/items")
+async def source_items(
+    folder: str | None = None,
+    user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
+    c: Container = Depends(deps),
+):
+    """List documents available in the connected OneDrive/SharePoint library."""
+    if c.doc_source is None:
+        raise HTTPException(503, "no document source configured")
+    return [it.model_dump() for it in await c.doc_source.list_items(folder)]
+
+
+@router.post("/sources/sync")
+async def source_sync(
+    folder: str | None = Form(None),
+    doc_type: DocumentType = Form(...),
+    case_id: str | None = Form(None),
+    classification: DataClassification = Form(DataClassification.INTERNAL),
+    user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
+    c: Container = Depends(deps),
+):
+    """Pull documents from OneDrive/SharePoint into the governed pipeline."""
+    if c.doc_source is None:
+        raise HTTPException(503, "no document source configured")
+    return await sync_from_source(
+        source=c.doc_source, folder=folder, doc_type=doc_type, case_id=case_id,
+        entity=user.entity, classification=classification,
+        embedder=c.embedder, vectors=c.vectors, storage=c.storage,
+        repository=c.repository, audit=c.audit,
     )
 
 

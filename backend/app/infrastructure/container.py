@@ -14,6 +14,7 @@ from app.adapters.vector_pgvector import InMemoryVectorStore, PgVectorStore
 from app.domain.ports import (
     AuditLog,
     CaseRepository,
+    DocumentSource,
     Embedder,
     LLMGateway,
     ObjectStorage,
@@ -31,6 +32,7 @@ class Container:
     repository: CaseRepository
     storage: ObjectStorage
     audit: AuditLog
+    doc_source: DocumentSource | None = None
 
     async def init(self) -> None:
         await self.repository.init()
@@ -66,6 +68,21 @@ def build_container(settings: Settings | None = None) -> Container:
     else:
         storage = LocalStorage(settings.local_storage_path)
 
+    doc_source: DocumentSource | None = None
+    if settings.doc_source == "graph":
+        from app.adapters.source_graph import GraphDocumentSource
+
+        doc_source = GraphDocumentSource(
+            tenant_id=settings.m365_tenant_id,
+            client_id=settings.m365_client_id,
+            client_secret=settings.m365_client_secret,
+            drive_id=settings.m365_drive_id,
+        )
+    elif settings.doc_source == "local":
+        from app.adapters.source_local import LocalFolderSource
+
+        doc_source = LocalFolderSource(settings.local_source_path)
+
     return Container(
         settings=settings,
         llm=ClaudeGateway(settings.anthropic_api_key, settings.dam_model),
@@ -74,6 +91,7 @@ def build_container(settings: Settings | None = None) -> Container:
         repository=repository,
         storage=storage,
         audit=JsonlAuditLog(settings.dam_audit_log_path),
+        doc_source=doc_source,
     )
 
 

@@ -136,3 +136,28 @@ def test_document_carries_classification(client):
     docs = client.get(f"/api/cases/{case_id}/documents", headers=DAM_DRAFTER).json()
     assert docs[0]["classification"] == "restricted"
     assert docs[0]["entity"] == "DAM"
+
+
+# --- Document source: OneDrive/SharePoint interface (local twin) ---------------
+
+def test_sync_from_document_source(client, tmp_path):
+    # Seed a fake OneDrive/SharePoint library folder
+    src = Path("./.test-data/source/inbox")
+    src.mkdir(parents=True, exist_ok=True)
+    (src / "submission-001.txt").write_bytes(b"Permohonan dari OneDrive")
+    (src / "submission-002.txt").write_bytes(b"Second submission")
+
+    listed = client.get("/api/sources/items?folder=inbox", headers=DAM_DRAFTER)
+    assert listed.status_code == 200
+    assert len(listed.json()) == 2
+
+    case = client.post("/api/cases", data={"title": "From OneDrive"}, headers=DAM_DRAFTER).json()
+    synced = client.post(
+        "/api/sources/sync",
+        data={"folder": "inbox", "doc_type": "submission", "case_id": case["case_id"]},
+        headers=DAM_DRAFTER,
+    )
+    assert synced.status_code == 200, synced.text
+    assert synced.json()["ingested"] == 2
+    docs = client.get(f"/api/cases/{case['case_id']}/documents", headers=DAM_DRAFTER).json()
+    assert len(docs) == 2

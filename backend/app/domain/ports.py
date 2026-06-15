@@ -101,3 +101,31 @@ class ObjectStorage(ABC):
 
     @abstractmethod
     def get(self, key: str) -> bytes: ...
+
+
+class SourceItem(BaseModel):
+    """A document discovered in an external repository (OneDrive/SharePoint)."""
+    external_id: str
+    name: str
+    path: str
+    modified: str | None = None
+    size_bytes: int | None = None
+
+
+class DocumentSource(ABC):
+    """External document repository the platform ingests from.
+
+    DAM stores governance documents in Microsoft 365 (OneDrive today, with a
+    SharePoint document library as the governed target — both are Microsoft
+    Graph drives). This port lets the platform pull submissions and SOPs from
+    those libraries instead of relying only on manual upload, and is the path
+    for the PRD's OneDrive-migration touchpoint (§10.2) and the
+    'system as the only authorized intake channel' control (Risk R6).
+    """
+
+    @abstractmethod
+    async def list_items(self, folder: str | None = None) -> list[SourceItem]: ...
+
+    @abstractmethod
+    async def fetch(self, external_id: str) -> tuple[bytes, SourceItem]:
+        """Download one item's bytes plus its metadata."""
