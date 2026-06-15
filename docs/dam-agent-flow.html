@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DAM — How the AI Review Panel Works (animated)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --blue:#0f62fe; --blue-bright:#4589ff; --blue-deep:#0043ce;
+    --blue-40:#78a9ff; --blue-20:#d0e2ff; --blue-10:#edf5ff;
+    --error:#da1e28; --warn:#f1c21b; --success:#24a148; --teal:#007d79; --purple:#8a3ffc;
+    --ink:#161616; --ink-2:#393939; --muted:#525252; --border:#e0e0e0;
+    --surface:#fff; --surface-2:#f4f4f4;
+    --sp3:12px; --sp4:16px; --sp5:24px; --sp6:32px; --sp8:48px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:'IBM Plex Sans',sans-serif; color:var(--ink);
+    background:linear-gradient(135deg,#fff 0%,var(--blue-10) 55%,var(--blue-20) 100%);
+    background-attachment:fixed; line-height:1.5;
+  }
+  .wrap{max-width:880px; margin:0 auto; padding:var(--sp8) var(--sp5)}
+  h1{font-weight:300; font-size:36px; line-height:1.2; margin:0 0 var(--sp3)}
+  h1 b{font-weight:600; color:var(--blue)}
+  .lead{font-size:18px; color:var(--ink-2); margin:0 0 var(--sp6); max-width:640px}
+  .eyebrow{font-size:12px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--blue); margin-bottom:var(--sp3)}
+
+  .stage{
+    background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--blue);
+    padding:var(--sp4) var(--sp5); opacity:.3; animation:fade 7s ease-in-out infinite;
+  }
+  .stage .lvl{font-size:12px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; color:var(--blue)}
+  .stage .name{font-weight:600; margin-left:var(--sp3)}
+  .stage .desc{font-size:14px; color:var(--muted); margin-top:6px}
+  .s1{animation-delay:0s}.s2{animation-delay:1.2s}.s3{animation-delay:2.4s}
+  .s4{animation-delay:3.6s}.s5{animation-delay:4.8s}
+  @keyframes fade{0%,100%{opacity:.3}14%,40%{opacity:1}}
+
+  .rail{position:relative; height:4px; background:var(--border); margin:10px 0; overflow:hidden}
+  .rail::after{content:''; position:absolute; top:-3px; width:10px; height:10px; border-radius:50%;
+    background:var(--blue); animation:dot 7s linear infinite}
+  @keyframes dot{0%{left:-2%;opacity:0}5%{opacity:1}95%{opacity:1}100%{left:100%;opacity:0}}
+
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:var(--sp3); margin-top:var(--sp3)}
+  .md{background:var(--surface-2); padding:10px 12px}
+  .md b{font-size:14px}.md span{display:block; font-size:12px; color:var(--muted); margin-top:2px}
+  .row{display:flex; gap:var(--sp3)}
+  .row>.md{flex:1}
+  .tag{display:inline-block; font-size:11px; font-weight:600; padding:3px 10px; border-radius:12px}
+  .t-warn{background:#f9e3ba; color:#8a6d00}.t-danger{background:#ffd7d9; color:var(--error)}
+  .t-ok{background:#d3f6d3; color:var(--success)}.t-info{background:var(--blue-20); color:var(--blue-deep)}
+  .approve{border-left-color:var(--success)}
+  .note{background:var(--blue-10); border-left:3px solid var(--blue); padding:var(--sp4) var(--sp5);
+    font-size:14px; color:var(--ink-2); margin-top:var(--sp6)}
+  .legend{font-size:13px; color:var(--muted); margin-top:var(--sp4)}
+  footer{margin-top:var(--sp8); padding-top:var(--sp4); border-top:1px solid var(--border);
+    font-size:12px; color:var(--muted); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}.row{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Danantara DAM · Multi-agent NOTA review</div>
+  <h1>How the AI review panel works — <b>agents review, humans decide</b></h1>
+  <p class="lead">A Nota Dinas (corporate-action memo) flows through four MD-level agents, two committees, and an executive synthesis — then a human approves at the level the rules require. The stages below light up in sequence; a case rides the rail down.</p>
+
+  <!-- 1 -->
+  <div class="stage s1">
+    <span class="lvl">Intake</span><span class="name">Nota Dinas masuk</span>
+    <div class="desc">Submission PDFs → OCR / Granite-Docling → extract entity, value, dates, request category.</div>
+  </div>
+  <div class="rail"></div>
+
+  <!-- 2 -->
+  <div class="stage s2">
+    <span class="lvl">Level 1 — Technical &amp; Advisory</span><span class="name">4 MD agents, in parallel</span>
+    <div class="grid">
+      <div class="md"><b>MD Investment</b><span>IRR/NPV · roadmap fit · BUMN fundamentals</span></div>
+      <div class="md"><b>MD Risk &amp; Sustainability</b><span>deal / macro / liquidity risk · ESG</span></div>
+      <div class="md"><b>MD Legal &amp; Compliance</b><span>UU PT/BUMN · contracts · authority</span></div>
+      <div class="md"><b>MD Finance</b><span>funding · cash flow · recompute %/totals</span></div>
+    </div>
+  </div>
+  <div class="rail"></div>
+
+  <!-- 3 -->
+  <div class="stage s3">
+    <span class="lvl">Level 2 — Committee Evaluation</span><span class="name">cross-examine once</span>
+    <div class="row" style="margin-top:var(--sp3)">
+      <div class="md"><b>Investment Committee</b><span>holistic portfolio fit</span></div>
+      <div class="md"><b>Risk Committee</b><span>risk mitigation vs return target</span></div>
+    </div>
+    <div class="desc">Agents challenge each other once — surface dissent, not consensus.</div>
+  </div>
+  <div class="rail"></div>
+
+  <!-- 4 -->
+  <div class="stage s4">
+    <span class="lvl">Level 3 — Executive Endorsement</span><span class="name">Review Chair synthesises</span>
+    <div class="desc">CIO (long-term value creation) + COO (execution readiness) → one report: findings, confidence, unresolved issues. <b style="color:var(--ink)">Every finding cites a source — uncited findings are dropped.</b></div>
+  </div>
+  <div class="rail"></div>
+
+  <!-- 5 -->
+  <div class="stage s5 approve">
+    <span class="lvl" style="color:var(--success)">Approval — human decides (AI never decides)</span>
+    <div class="row" style="margin-top:var(--sp3)">
+      <div class="md"><b>CEO</b><span>routine / mid-scale (RKAP)</span></div>
+      <div class="md"><b>Dewan Pengawas</b><span>super-strategic: divestiture, M&amp;A, global debt</span></div>
+      <div class="md"><b>Presiden RI</b><span>fiscal-scale impact / PSN</span></div>
+    </div>
+    <div class="desc">Level chosen automatically by the delegation-of-authority rule engine from the case value/significance.</div>
+  </div>
+
+  <div class="note">
+    <b>The guardrails (why this is safe for an SOE):</b> rules decide / AI explains · 100% of generated text cites a source or is suppressed · judgment sections are structurally human-only · every agent call is audited with its model + a trace id. The panel accelerates the review; the named human officer signs.
+  </div>
+
+  <div class="legend">
+    Model mix (cost-tiered): extraction &amp; routing → Haiku 4.5 · drafting → Sonnet 4.6 · reasoning/consistency → Opus 4.8. Grounded in OECD SOE 2024, BUMN PER-2/MBU/02/2023, the IIA Three Lines model, and Danantara's layered committee governance.
+  </div>
+
+  <footer>
+    <span>DAM Governance Intelligence Platform · agent review flow</span>
+    <span>IBM × BPI Danantara · Confidential — Internal Use Only</span>
+  </footer>
+</div>
+</body>
+</html>
