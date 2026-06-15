@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DAM Governance Intelligence Platform — Architecture, PoC & Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --blue:#0f62fe; --blue-bright:#4589ff; --blue-deep:#0043ce;
+    --blue-40:#78a9ff; --blue-20:#d0e2ff; --blue-10:#edf5ff;
+    --error:#da1e28; --warn:#f1c21b; --success:#24a148; --teal:#007d79; --purple:#8a3ffc;
+    --ink:#161616; --ink-2:#393939; --muted:#525252; --disabled:#8d8d8d;
+    --border:#e0e0e0; --border-soft:#c6c6c6; --surface:#fff; --surface-2:#f4f4f4;
+    --sp1:4px; --sp2:8px; --sp3:12px; --sp4:16px; --sp5:24px; --sp6:32px; --sp7:40px; --sp8:48px; --sp9:64px;
+    --elev1:0 4px 8px rgba(0,0,0,.06); --elev2:0 8px 16px rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; font-family:'IBM Plex Sans',sans-serif; color:var(--ink);
+    background:linear-gradient(135deg,#fff 0%,var(--blue-10) 55%,var(--blue-20) 100%);
+    background-attachment:fixed; font-size:16px; line-height:24px;
+  }
+  h1,h2,h3,h4{font-weight:300; margin:0; letter-spacing:0}
+  code,.mono{font-family:'IBM Plex Mono',monospace}
+  a{color:var(--blue); text-decoration:none}
+  a:hover{text-decoration:underline; color:var(--blue-bright)}
+
+  /* Header */
+  header.topbar{
+    position:sticky; top:0; z-index:50; background:var(--ink); color:#fff;
+    height:48px; display:flex; align-items:center; padding:0 var(--sp5); gap:var(--sp4);
+    border-bottom:1px solid #333;
+  }
+  .topbar .brand{font-size:14px; font-weight:600}
+  .topbar .brand span{font-weight:300; color:var(--blue-40)}
+  .topbar nav{margin-left:auto; display:flex; gap:var(--sp1)}
+  .topbar nav a{color:#c6c6c6; font-size:14px; padding:0 var(--sp3); height:48px; display:flex; align-items:center; border-bottom:2px solid transparent}
+  .topbar nav a:hover{color:#fff; text-decoration:none; border-bottom-color:var(--blue)}
+
+  .wrap{max-width:1184px; margin:0 auto; padding:0 var(--sp5)}
+  section{padding:var(--sp9) 0; border-bottom:1px solid var(--border)}
+  .eyebrow{font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--blue); margin-bottom:var(--sp3)}
+  .sec-title{font-size:42px; line-height:52px; margin-bottom:var(--sp4)}
+  .sec-sub{font-size:20px; line-height:28px; color:var(--muted); max-width:760px; margin-bottom:var(--sp7)}
+
+  /* Hero */
+  .hero{padding:var(--sp9) 0 var(--sp8)}
+  .hero h1{font-size:53px; line-height:60px; margin-bottom:var(--sp4); max-width:900px}
+  .hero h1 b{font-weight:600; color:var(--blue)}
+  .hero p.lead{font-size:20px; line-height:30px; color:var(--ink-2); max-width:720px; margin-bottom:var(--sp6)}
+  .meta-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:var(--sp4); margin-top:var(--sp6)}
+  .meta-grid .k{font-size:12px; font-weight:600; text-transform:uppercase; color:var(--blue); letter-spacing:.03em}
+  .meta-grid .v{font-size:14px; color:var(--ink-2); margin-top:var(--sp1)}
+
+  /* KPI band */
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:var(--sp4)}
+  .kpi{background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--blue); padding:var(--sp5)}
+  .kpi .num{font-size:40px; line-height:1; font-weight:300; color:var(--blue); font-variant-numeric:tabular-nums}
+  .kpi .lbl{font-size:14px; color:var(--muted); margin-top:var(--sp3)}
+
+  /* Cards */
+  .card{background:var(--surface); border:1px solid var(--border); padding:var(--sp5)}
+  .card.accent{border-left:3px solid var(--blue)}
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:var(--sp4)}
+  .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:var(--sp4)}
+
+  /* Architecture diagram */
+  .diagram{background:var(--surface); border:1px solid var(--border); padding:var(--sp6)}
+  .layer{border:1px solid var(--border); margin-bottom:var(--sp3); background:var(--surface)}
+  .layer-head{display:flex; align-items:center; gap:var(--sp3); padding:var(--sp3) var(--sp4); background:var(--surface-2); border-bottom:1px solid var(--border)}
+  .layer-head .tag{font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#fff; background:var(--blue); padding:2px var(--sp2)}
+  .layer-head .name{font-weight:600; font-size:14px}
+  .layer-head .desc{font-size:12px; color:var(--muted); margin-left:auto}
+  .nodes{display:flex; flex-wrap:wrap; gap:var(--sp2); padding:var(--sp4)}
+  .node{font-size:12px; border:1px solid var(--border-soft); padding:var(--sp2) var(--sp3); background:var(--surface); display:flex; flex-direction:column; gap:2px; min-width:130px}
+  .node b{font-size:12px; font-weight:600}
+  .node span{font-size:11px; color:var(--muted)}
+  .node.port{border-color:var(--blue-40); background:var(--blue-10)}
+  .node.adapter{border-color:var(--border-soft)}
+  .flow-arrow{text-align:center; color:var(--blue); font-size:18px; line-height:1; margin:2px 0}
+
+  .legend{display:flex; gap:var(--sp5); flex-wrap:wrap; margin-top:var(--sp4); font-size:12px; color:var(--muted)}
+  .legend .dot{display:inline-block; width:10px; height:10px; margin-right:6px; vertical-align:middle}
+
+  /* Tables */
+  table{width:100%; border-collapse:collapse; background:var(--surface); font-size:14px}
+  th,td{text-align:left; padding:var(--sp3) var(--sp4); border-bottom:1px solid var(--border); vertical-align:top}
+  th{background:var(--ink); color:#fff; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.03em}
+  tbody tr:nth-child(even){background:var(--surface-2)}
+  td code{font-size:12px; background:var(--blue-10); padding:1px 6px; color:var(--blue-deep)}
+
+  /* Badges / tags */
+  .badge{display:inline-block; font-size:11px; font-weight:600; padding:3px var(--sp3); border-radius:12px; white-space:nowrap}
+  .b-info{background:var(--blue-20); color:var(--blue-deep)}
+  .b-ok{background:#d3f6d3; color:var(--success)}
+  .b-warn{background:#f9e3ba; color:#8a6d00}
+  .b-prog{background:var(--blue-10); color:var(--blue)}
+  .b-p1{background:#ffd7d9; color:var(--error)}
+  .b-p2{background:#fcf4d6; color:#8a6d00}
+  .b-p3{background:#d9fbfb; color:var(--teal)}
+  .b-managed{background:var(--blue-20); color:var(--blue-deep)}
+  .b-self{background:#e8daff; color:var(--purple)}
+
+  /* Feature cards */
+  .feat{background:var(--surface); border:1px solid var(--border); border-top:3px solid var(--blue); padding:var(--sp5); display:flex; flex-direction:column; gap:var(--sp3)}
+  .feat .fr{font-size:12px; font-weight:600; color:var(--blue); letter-spacing:.03em}
+  .feat h4{font-size:20px; line-height:26px}
+  .feat p{font-size:14px; color:var(--muted); margin:0}
+  .feat .foot{margin-top:auto; display:flex; gap:var(--sp2); align-items:center; flex-wrap:wrap; padding-top:var(--sp3); border-top:1px solid var(--border)}
+
+  /* Timeline */
+  .timeline{position:relative; margin-top:var(--sp5)}
+  .sprint{display:grid; grid-template-columns:160px 1fr; gap:var(--sp5); padding:var(--sp5) 0; border-bottom:1px solid var(--border)}
+  .sprint:last-child{border-bottom:none}
+  .sprint .when{font-size:13px}
+  .sprint .when .n{font-size:24px; font-weight:300; color:var(--blue); display:block}
+  .sprint .when .wk{color:var(--muted); font-size:12px}
+  .sprint .when .done{margin-top:var(--sp2)}
+  .sprint h4{font-size:18px; margin-bottom:var(--sp2)}
+  .sprint ul{margin:0; padding-left:var(--sp5); font-size:14px; color:var(--ink-2)}
+  .sprint ul li{margin-bottom:var(--sp1)}
+
+  .pill-row{display:flex; gap:var(--sp2); flex-wrap:wrap; margin-top:var(--sp3)}
+  .pill{font-size:11px; border:1px solid var(--border-soft); padding:3px var(--sp3); color:var(--muted); background:var(--surface)}
+
+  .note{background:var(--blue-10); border-left:3px solid var(--blue); padding:var(--sp4) var(--sp5); font-size:14px; color:var(--ink-2); margin-top:var(--sp5)}
+  .note b{color:var(--ink)}
+
+  footer{padding:var(--sp7) 0; color:var(--muted); font-size:12px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:var(--sp3)}
+
+  @media (max-width:900px){
+    .meta-grid,.kpis,.grid-3,.grid-2{grid-template-columns:1fr 1fr}
+    .hero h1{font-size:38px; line-height:46px}
+    .sec-title{font-size:32px; line-height:40px}
+    .sprint{grid-template-columns:1fr}
+    .topbar nav{display:none}
+  }
+  @media (max-width:560px){
+    .meta-grid,.kpis,.grid-3,.grid-2{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">Danantara <span>· DAM Governance Intelligence</span></div>
+  <nav>
+    <a href="#arch">Architecture</a>
+    <a href="#models">Model foundation</a>
+    <a href="#poc">PoC features</a>
+    <a href="#plan">Plan</a>
+    <a href="#metrics">Metrics</a>
+  </nav>
+</header>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <section class="hero" style="border-bottom:none">
+    <div class="eyebrow">Architecture · Proof of Concept · Delivery Plan</div>
+    <h1>AI-assisted governance that <b>drafts</b>, <b>reconciles</b>, and <b>routes</b> — with the human kept on judgment.</h1>
+    <p class="lead">A secure, enterprise-controlled platform for Danantara Asset Management. Rules decide; AI explains. Every generated sentence is traceable to a source, and every decision is reconstructable from an append-only audit trail.</p>
+    <div class="meta-grid">
+      <div><div class="k">Client</div><div class="v">BPI Danantara — DAM</div></div>
+      <div><div class="k">Delivery partner</div><div class="v">IBM</div></div>
+      <div><div class="k">Phase 1 target</div><div class="v">−30% document prep time</div></div>
+      <div><div class="k">Scope</div><div class="v">Quick wins → BPI platform</div></div>
+    </div>
+  </section>
+
+  <!-- KPI BAND -->
+  <section style="border-bottom:none; padding-top:0">
+    <div class="kpis">
+      <div class="kpi"><div class="num">−30%</div><div class="lbl">Governance document preparation time (Phase 1 mandate)</div></div>
+      <div class="kpi"><div class="num">100%</div><div class="lbl">Generated sentences source-traceable — hard gate, never bypassed</div></div>
+      <div class="kpi"><div class="num">&lt;10%</div><div class="lbl">Senior analyst time on consistency checking (from ~30%)</div></div>
+      <div class="kpi"><div class="num">8</div><div class="lbl">Foundation models across 4 task roles, two serving tiers</div></div>
+    </div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section>
+    <div class="eyebrow">Why this exists</div>
+    <h2 class="sec-title">Six governance pain points</h2>
+    <p class="sec-sub">DAM is Indonesia's sovereign-wealth governance gatekeeper. Today's operating model is manual, fragmented, and exposes individual officers to personal liability.</p>
+    <div class="grid-3">
+      <div class="card accent"><b>A · Multiple versions of truth</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Parallel drafting → mismatched artefacts. ~30% of senior time on manual reconciliation.</p></div>
+      <div class="card accent"><b>B · Over-documentation</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">80% of NOTA content is descriptive restatement produced as a defensive liability shield.</p></div>
+      <div class="card accent"><b>C · Unclear SOP routing</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Judgment-based pathway selection → under-routing (missed approvals) and over-routing (delays).</p></div>
+      <div class="card accent"><b>D · Repetitive drafting</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Same structure, same logic, same data pulled from submissions, over and over.</p></div>
+      <div class="card accent"><b>E · Uncontrolled AI</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Public AI tools on ungoverned cloud storage → hallucination, leakage, no auditability.</p></div>
+      <div class="card accent"><b>F · Personal liability</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Officers bear individual accountability. More involvement = more exposure. Codify low-risk rules.</p></div>
+    </div>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section id="arch">
+    <div class="eyebrow">System design</div>
+    <h2 class="sec-title">Clean-architecture, ports &amp; adapters</h2>
+    <p class="sec-sub">Dependencies point inward. The domain core is framework-free; every external dependency — model, database, storage, audit — sits behind a port. Swapping a provider or cloud is an adapter change, never a rework.</p>
+
+    <div class="diagram">
+      <!-- Frontend -->
+      <div class="layer">
+        <div class="layer-head"><span class="tag">UI</span><span class="name">Frontend — React + IBM Carbon</span><span class="desc">Dashboard · Drafting · Consistency · Routing · Audit</span></div>
+        <div class="nodes">
+          <div class="node"><b>Drafting workspace</b><span>accept / edit / reject</span></div>
+          <div class="node"><b>Consistency review</b><span>excerpt pairs · severity</span></div>
+          <div class="node"><b>SOP routing</b><span>rules + explanation</span></div>
+          <div class="node"><b>Explainability</b><span>per-case decision trace</span></div>
+          <div class="node"><b>Dashboards</b><span>status · scorecard · AI ops</span></div>
+        </div>
+      </div>
+      <div class="flow-arrow">▼ &nbsp; REST (FastAPI thin controllers, role-guarded)</div>
+
+      <!-- API -->
+      <div class="layer">
+        <div class="layer-head"><span class="tag">API</span><span class="name">Controllers</span><span class="desc">translate HTTP → use cases · RBAC per route</span></div>
+        <div class="nodes">
+          <div class="node">/cases · /advance</div>
+          <div class="node">/documents/ingest</div>
+          <div class="node">/agents/draft · /consistency · /route · /pipeline</div>
+          <div class="node">/cases/{id}/trace · /audit</div>
+        </div>
+      </div>
+      <div class="flow-arrow">▼</div>
+
+      <!-- Use cases -->
+      <div class="layer">
+        <div class="layer-head"><span class="tag">USE CASES</span><span class="name">Multi-agent orchestration</span><span class="desc">depend on ports only</span></div>
+        <div class="nodes">
+          <div class="node">ingest_document</div>
+          <div class="node">extract_fields</div>
+          <div class="node">draft_nota</div>
+          <div class="node">check_consistency</div>
+          <div class="node">route_request</div>
+          <div class="node">manage_case</div>
+          <div class="node">run_pipeline</div>
+        </div>
+      </div>
+      <div class="flow-arrow">▼ &nbsp; domain ports (interfaces)</div>
+
+      <!-- Domain + ports -->
+      <div class="layer">
+        <div class="layer-head"><span class="tag">DOMAIN</span><span class="name">Entities · ports · SOP rule engine</span><span class="desc">framework-free core</span></div>
+        <div class="nodes">
+          <div class="node">Case · checkpoint rule</div>
+          <div class="node">GovernanceDocument · hierarchy</div>
+          <div class="node">SOP rules (YAML)</div>
+          <div class="node port">LLMGateway</div>
+          <div class="node port">Embedder</div>
+          <div class="node port">VectorStore</div>
+          <div class="node port">CaseRepository</div>
+          <div class="node port">ObjectStorage</div>
+          <div class="node port">AuditLog</div>
+        </div>
+      </div>
+      <div class="flow-arrow">▼ &nbsp; adapters implement ports</div>
+
+      <!-- Adapters -->
+      <div class="layer">
+        <div class="layer-head"><span class="tag">ADAPTERS</span><span class="name">Swappable implementations</span><span class="desc">each has an in-memory/local twin for tests</span></div>
+        <div class="nodes">
+          <div class="node adapter"><b>Model router</b><span>Claude API + self-host pool</span></div>
+          <div class="node adapter"><b>pgvector</b><span>+ in-memory twin</span></div>
+          <div class="node adapter"><b>Postgres repo</b><span>cases · docs · artefacts</span></div>
+          <div class="node adapter"><b>MinIO / S3</b><span>original files</span></div>
+          <div class="node adapter"><b>JSONL audit</b><span>→ WORM (S6)</span></div>
+          <div class="node adapter"><b>Docling + Tesseract</b><span>document understanding</span></div>
+        </div>
+      </div>
+      <div class="flow-arrow">▼</div>
+
+      <!-- Infra -->
+      <div class="layer">
+        <div class="layer-head"><span class="tag">INFRA</span><span class="name">Deployment targets — config-only per profile</span><span class="desc">containers + 12-factor config</span></div>
+        <div class="nodes">
+          <div class="node"><b>Now</b><span>Docker Compose (self-host)</span></div>
+          <div class="node"><b>AWS</b><span>EKS/ECS · RDS · S3</span></div>
+          <div class="node"><b>Databricks</b><span>Model Serving · Vector Search · Delta</span></div>
+          <div class="node"><b>watsonx</b><span>watsonx.ai · COS</span></div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span><span class="dot" style="background:var(--blue-10); border:1px solid var(--blue-40)"></span>Port (interface)</span>
+        <span><span class="dot" style="background:var(--surface); border:1px solid var(--border-soft)"></span>Adapter / component</span>
+        <span><span class="dot" style="background:var(--surface-2); border:1px solid var(--border)"></span>Layer boundary</span>
+      </div>
+    </div>
+
+    <div class="note"><b>Why it matters:</b> the same codebase runs on a laptop (in-memory + local adapters, sub-second test suite) and in production on Postgres + pgvector + MinIO — and is portable to AWS, Databricks, or watsonx without touching the domain or use-case layers. Sprint 1 proved this: 7/7 tests pass identically on both backends.</div>
+  </section>
+
+  <!-- GOVERNANCE GUARDRAILS -->
+  <section>
+    <div class="eyebrow">Non-negotiable guardrails</div>
+    <h2 class="sec-title">How liability is engineered out</h2>
+    <div class="grid-2">
+      <div class="card accent"><b>Rules decide, AI explains</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">SOP selection, approval thresholds, and risk tiers are evaluated by a deterministic YAML rulebook. The model only phrases the explanation — it never makes a governance decision. Every fired rule id is logged.</p></div>
+      <div class="card accent"><b>Grounding is a hard gate</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">An unsourced sentence is <em>suppressed</em>, not warned about — replaced with "Low confidence — manual input required". 100% source traceability, validated at generation time, on every model in the mix.</p></div>
+      <div class="card accent"><b>Humans keep the judgment</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">NOTA sections split into descriptive (AI, ~80%) and judgment (always human, ~20%). A contamination scan blocks any AI text in a judgment section as a Severity-1 incident.</p></div>
+      <div class="card accent"><b>Everything is attributable</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Append-only audit of every model call, rule firing, and sign-off — with role, model, version, and the authenticated identity. 7-year tamper-evident retention. Any output → full provenance in ≤2 clicks.</p></div>
+    </div>
+  </section>
+
+  <!-- MODEL FOUNDATION -->
+  <section id="models">
+    <div class="eyebrow">LLM foundation</div>
+    <h2 class="sec-title">Two-tier model mix, routed by task role</h2>
+    <p class="sec-sub">A managed online-API tier (Claude) and a self-host tier (vLLM, OpenAI-compatible) for every role. Policy-driven routing: outage fallback, classification-forced tier, and an edge profile that pins everything local.</p>
+
+    <table>
+      <thead><tr><th>Task role</th><th>Used by</th><th>Online API <span class="badge b-managed">managed</span></th><th>Self-host <span class="badge b-self">local</span></th></tr></thead>
+      <tbody>
+        <tr><td><b>Primary / drafting</b></td><td>NOTA descriptive sections (FR-1)</td><td><code>claude-opus-4-8</code></td><td>Qwen3-235B-A22B <span style="color:var(--muted)">/ Qwen3-32B</span></td></tr>
+        <tr><td><b>Reasoning specialist</b></td><td>Consistency · contradictions (FR-2)</td><td><code>claude-opus-4-8</code> <span style="color:var(--muted)">adaptive</span></td><td>DeepSeek-R1-Distill-Qwen-32B</td></tr>
+        <tr><td><b>Fast extraction / classification</b></td><td>Field extraction · routing (FR-4)</td><td><code>claude-haiku-4-5</code></td><td>Mistral Small 3.x</td></tr>
+        <tr><td><b>Multimodal / edge</b></td><td>Image-heavy docs · air-gapped sites</td><td><code>claude-opus-4-8</code> <span style="color:var(--muted)">vision</span></td><td>Gemma 3 27B <span style="color:var(--muted)">→ Gemma 4</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:20px; margin:var(--sp7) 0 var(--sp3)">Document understanding — pre-LLM, fully local</h3>
+    <div class="grid-3">
+      <div class="card"><b>Granite-Docling</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Layout, tables, reading order, numbered-clause structure → structured markdown for chunking.</p></div>
+      <div class="card"><b>Tesseract OCR</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0"><code>ind</code> + <code>eng</code> text layer for scanned and born-paper pages, then through Docling.</p></div>
+      <div class="card"><b>Multimodal escalation</b><p style="color:var(--muted); font-size:14px; margin:var(--sp2) 0 0">Low-confidence OCR or image-heavy pages escalate to the multimodal role — output still passes the grounding gate.</p></div>
+    </div>
+
+    <div class="note"><b>Routing policies (audited per call):</b> RTE-001 managed outage → self-host fallback · RTE-002 sensitive document → self-host tier forced · RTE-003 log role/tier/model/version/policy · RTE-004 no model joins a role until it passes the 20-case regression suite · RTE-005 edge profile pins all roles self-host. Grounding gate, judgment prohibition, and audit apply to <b>every</b> model.</div>
+  </section>
+
+  <!-- POC FEATURES -->
+  <section id="poc">
+    <div class="eyebrow">Proof of concept</div>
+    <h2 class="sec-title">Eight capability modules</h2>
+    <p class="sec-sub">The Phase 1 feature set. Status reflects the working scaffold after Sprint 1 — green where the slice runs end-to-end today, in-progress where it matures to full PRD spec in the named sprint.</p>
+
+    <div class="grid-2">
+      <div class="feat">
+        <div class="fr">FR-1 · P1</div>
+        <h4>AI-assisted drafting engine</h4>
+        <p>First-draft descriptive NOTA sections from submissions, templates, and historical notes via RAG. Judgment sections left blank for the reviewer. Every paragraph cites its source.</p>
+        <div class="foot"><span class="badge b-prog">In progress → S3</span><span class="badge b-p1">Critical</span><span class="badge b-info">&lt;5 min draft</span></div>
+      </div>
+      <div class="feat">
+        <div class="fr">FR-2 · P1</div>
+        <h4>Cross-document consistency checker</h4>
+        <p>Compares NOTA vs board note vs decision vs communication against the master. Eight inconsistency types, Critical/Warning/Informational severity, with quoted excerpt pairs and resolutions.</p>
+        <div class="foot"><span class="badge b-prog">In progress → S3</span><span class="badge b-p1">Critical</span><span class="badge b-info">≥90% precision</span></div>
+      </div>
+      <div class="feat">
+        <div class="fr">FR-3 · P1</div>
+        <h4>Version control &amp; single source of truth</h4>
+        <p>Master-document hierarchy with version history, checkout/check-in locking, diff view, post-queue immutability, and automatic propagation flags to dependent artefacts.</p>
+        <div class="foot"><span class="badge b-prog">In progress → S3</span><span class="badge b-p1">Critical</span></div>
+      </div>
+      <div class="feat">
+        <div class="fr">FR-4 · P1</div>
+        <h4>Rule-based eligibility &amp; SOP routing</h4>
+        <p>Evaluates a request against delegation-of-authority thresholds and governance rules: which SOP, what approvals, pre-conditions, timeline. Ambiguity routes to a human resolver.</p>
+        <div class="foot"><span class="badge b-ok">Scaffold ✓ → S4</span><span class="badge b-p1">Critical</span><span class="badge b-info">&lt;30 s</span></div>
+      </div>
+      <div class="feat">
+        <div class="fr">FR-5 · P1</div>
+        <h4>Secure enterprise AI sandbox</h4>
+        <p>All inference inside the DAM boundary, no external transmission or training. Single audited model entry, RBAC, data classification gating model tiers, complete AI interaction log.</p>
+        <div class="foot"><span class="badge b-prog">In progress → S6</span><span class="badge b-p1">Critical</span></div>
+      </div>
+      <div class="feat">
+        <div class="fr">FR-6 · P1</div>
+        <h4>Integrated workflow orchestration</h4>
+        <p>Submission intake → eligibility → drafting → review → board → decision → communication. System-driven progression with risk-tier checkpoints and SLA bottleneck alerts.</p>
+        <div class="foot"><span class="badge b-ok">Scaffold ✓ → S4</span><span class="badge b-p1">Critical</span></div>
+      </div>
+      <div class="feat">
+        <div class="fr">FR-7 · P2</div>
+        <h4>SOP digitization &amp; decision routing</h4>
+        <p>SOPs as versioned, approval-gated decision trees with escalation paths. Non-technical visualization for compliance officers. Coverage dashboard tracks migration.</p>
+        <div class="foot"><span class="badge b-prog">In progress → S4</span><span class="badge b-p2">High</span></div>
+      </div>
+      <div class="feat">
+        <div class="fr">FR-8 · P2</div>
+        <h4>Risk-based automation segmentation</h4>
+        <p>Multi-dimensional risk scoring (value, entity risk, novelty, precedent, regulatory exposure). Low-risk runs fully automated; complex routes to human-in-the-loop. Auto-escalation on errors.</p>
+        <div class="foot"><span class="badge b-ok">Scaffold ✓ → S4</span><span class="badge b-p2">High</span></div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:var(--sp4)">
+      <div class="feat" style="border-top-color:var(--teal)">
+        <div class="fr" style="color:var(--teal)">FR-9 · P3 · Phase 2</div>
+        <h4>BPI-wide governance platform</h4>
+        <p>Multi-tenant extension across DAM, DIM, DSI with shared artefact templates, workflow definitions, and SOP libraries under central BPI governance.</p>
+        <div class="foot"><span class="badge b-info">Roadmap</span><span class="badge b-p3">Strategic</span></div>
+      </div>
+      <div class="feat" style="border-top-color:var(--teal)">
+        <div class="fr" style="color:var(--teal)">FR-10 · P3 · Phase 2</div>
+        <h4>Agentic governance system</h4>
+        <p>Agents autonomously draft, validate, route, and flag across the low-risk lifecycle. Humans intervene only on exceptions, via a review interface surfacing full agent reasoning.</p>
+        <div class="foot"><span class="badge b-info">Roadmap · seeded</span><span class="badge b-p3">Strategic</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLAN -->
+  <section id="plan">
+    <div class="eyebrow">Delivery plan</div>
+    <h2 class="sec-title">Six sprints to a measured pilot</h2>
+    <p class="sec-sub">Twelve weeks. Sprint 1 is complete. Each subsequent sprint closes a cluster of PRD requirements; Sprint 6 hardens security and proves the 30% target with a real pilot.</p>
+
+    <div class="timeline">
+      <div class="sprint">
+        <div class="when"><span class="n">S1</span><span class="wk">Weeks 1–2</span><span class="done"><span class="badge b-ok">Complete ✓</span></span></div>
+        <div>
+          <h4>Architecture hardening &amp; foundations</h4>
+          <ul>
+            <li>Clean architecture: domain / use-cases / adapters / infrastructure with ports</li>
+            <li>Postgres persistence · MinIO storage · auth skeleton with role-based sign-off</li>
+            <li>IBM Carbon design tokens · CI (lint + dual-backend tests + frontend build)</li>
+          </ul>
+          <div class="pill-row"><span class="pill">7/7 tests green</span><span class="pill">pushed to GitHub</span><span class="pill">36 issues in Linear</span></div>
+        </div>
+      </div>
+      <div class="sprint">
+        <div class="when"><span class="n">S2</span><span class="wk">Weeks 3–4</span></div>
+        <div>
+          <h4>RAG maturity &amp; the grounding gate</h4>
+          <ul>
+            <li>Enterprise embeddings · semantic chunking · hybrid retrieval + reranking</li>
+            <li>Hard 100% source-traceability gate · 20-case regression suite in CI</li>
+            <li>Multi-model router + self-host pool · Granite-Docling + Tesseract pipeline</li>
+            <li>PRD 7-stage workflow lifecycle · draft-latency SLA instrumentation</li>
+          </ul>
+          <div class="pill-row"><span class="pill">FR-1</span><span class="pill">FR-5</span><span class="pill">FR-6</span></div>
+        </div>
+      </div>
+      <div class="sprint">
+        <div class="when"><span class="n">S3</span><span class="wk">Weeks 5–6</span></div>
+        <div>
+          <h4>Drafting, consistency &amp; version control to spec</h4>
+          <ul>
+            <li>Template store · paragraph accept/edit/reject · contamination zero-gate</li>
+            <li>8-type consistency taxonomy · resolution workflow · board-stage Critical gate</li>
+            <li>FR-3 version control: history, locking, diff, immutability, propagation</li>
+          </ul>
+          <div class="pill-row"><span class="pill">Closes FR-1</span><span class="pill">Closes FR-2</span><span class="pill">Closes FR-3</span></div>
+        </div>
+      </div>
+      <div class="sprint">
+        <div class="when"><span class="n">S4</span><span class="wk">Weeks 7–8</span></div>
+        <div>
+          <h4>Workflow, SOP &amp; risk automation</h4>
+          <ul>
+            <li>SOP authoring &amp; lifecycle · decision-tree visualizer · what-if simulator</li>
+            <li>Routing output contract · dual-approval rule governance · risk scoring</li>
+            <li>Automation safety net · hands-free low-risk flow end-to-end</li>
+          </ul>
+          <div class="pill-row"><span class="pill">Closes FR-4</span><span class="pill">FR-6</span><span class="pill">FR-7</span><span class="pill">FR-8</span></div>
+        </div>
+      </div>
+      <div class="sprint">
+        <div class="when"><span class="n">S5</span><span class="wk">Weeks 9–10</span></div>
+        <div>
+          <h4>Dashboards, explainability &amp; usability</h4>
+          <ul>
+            <li>Real-time status board · management scorecard · AI-ops monitoring</li>
+            <li>Per-case decision timeline · confidence scores · accessibility (WCAG AA)</li>
+            <li>Responsive pass · &lt;4 hours analyst training validated</li>
+          </ul>
+          <div class="pill-row"><span class="pill">All FR surfaces</span></div>
+        </div>
+      </div>
+      <div class="sprint">
+        <div class="when"><span class="n">S6</span><span class="wk">Weeks 11–12</span></div>
+        <div>
+          <h4>Security hardening &amp; measured pilot</h4>
+          <ul>
+            <li>Data classification · public-AI network block · red-team cycle</li>
+            <li>Tamper-evident 7-year audit · ops readiness (99.5%, backups, DR)</li>
+            <li>Two-week pilot: baseline freeze, surveys, −30% target evidence</li>
+          </ul>
+          <div class="pill-row"><span class="pill">Closes FR-5</span><span class="pill">Go-live gate</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="note"><b>Dependencies to resolve (PRD open questions):</b> infrastructure model (Q1) and approved sandbox model (Q2) → Sprint 2 · SOP inventory (Q3) → Sprint 4, SME workshops in Sprint 2 · legal opinion on AI-assisted artefacts (Q4) → before pilot · pilot users &amp; file types (Q6) → Sprint 6. The port architecture keeps Q1/Q2 from blocking the rest of Sprint 2.</div>
+  </section>
+
+  <!-- METRICS -->
+  <section id="metrics" style="border-bottom:none">
+    <div class="eyebrow">Success metrics</div>
+    <h2 class="sec-title">How we prove the 30%</h2>
+    <p class="sec-sub">Baseline frozen at the end of pilot week 2; measured daily, reviewed monthly on the IBM delivery scorecard. Any metric breaching its threshold triggers an out-of-cycle review.</p>
+    <table>
+      <thead><tr><th>Metric</th><th>Baseline</th><th>Phase 1 target</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Governance document preparation time</td><td>current</td><td><b>−30% minimum</b></td><td>§3.2</td></tr>
+        <tr><td>Senior analyst time on consistency checking</td><td>~30%</td><td>&lt;10%</td><td>§3.2</td></tr>
+        <tr><td>NOTA first-draft generation time</td><td>manual hours</td><td>&lt;5 min (≤50 pp)</td><td>FR-1</td></tr>
+        <tr><td>Cross-document inconsistency at sign-off</td><td>significant</td><td>near zero (system-flagged)</td><td>§3.2</td></tr>
+        <tr><td>Source traceability rate</td><td>n/a</td><td>100% — hard gate</td><td>FR-1</td></tr>
+        <tr><td>Judgment-section contamination</td><td>n/a</td><td>zero (Sev-1 on breach)</td><td>FR-1</td></tr>
+        <tr><td>Checker precision / recall</td><td>n/a</td><td>≥90% / ≥85% (≥95% Critical)</td><td>FR-2</td></tr>
+        <tr><td>Controlled AI environment adoption</td><td>0%</td><td>100% team migration</td><td>§3.2</td></tr>
+        <tr><td>Audit trail completeness</td><td>absent</td><td>100% of actions</td><td>NFR</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    <span>DAM Governance Intelligence Platform · Architecture, PoC &amp; Plan</span>
+    <span>IBM × BPI Danantara · Confidential — Internal Use Only · Phase 1 quick wins</span>
+  </footer>
+
+</div>
+</body>
+</html>
