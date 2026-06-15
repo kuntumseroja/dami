@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DAM — NOTA Drafting Showcase (step by step)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --blue:#0f62fe; --blue-deep:#0043ce; --blue-40:#78a9ff; --blue-20:#d0e2ff; --blue-10:#edf5ff;
+    --error:#da1e28; --warn:#f1c21b; --warn-bg:#f9e3ba; --success:#24a148;
+    --ink:#161616; --ink-2:#393939; --muted:#525252; --border:#e0e0e0;
+    --surface:#fff; --surface-2:#f4f4f4;
+    --sp2:8px; --sp3:12px; --sp4:16px; --sp5:24px; --sp6:32px; --sp8:48px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; font-family:'IBM Plex Sans',sans-serif; color:var(--ink); line-height:1.5;
+    background:linear-gradient(135deg,#fff 0%,var(--blue-10) 55%,var(--blue-20) 100%); background-attachment:fixed}
+  .nav{position:sticky; top:0; z-index:9; background:var(--ink); display:flex; gap:2px; padding:0 var(--sp5); height:44px; align-items:center}
+  .nav a{color:#c6c6c6; font-size:13px; text-decoration:none; padding:0 var(--sp3); height:44px; display:flex; align-items:center; border-bottom:2px solid transparent}
+  .nav a:hover{color:#fff}
+  .nav a.on{color:#fff; border-bottom-color:var(--blue)}
+  .wrap{max-width:880px; margin:0 auto; padding:var(--sp8) var(--sp5)}
+  h1{font-weight:300; font-size:36px; line-height:1.2; margin:0 0 var(--sp3)}
+  h1 b{font-weight:600; color:var(--blue)}
+  h2{font-weight:300; font-size:24px; margin:var(--sp8) 0 var(--sp4)}
+  .lead{font-size:18px; color:var(--ink-2); margin:0 0 var(--sp6); max-width:660px}
+  .eyebrow{font-size:12px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--blue); margin-bottom:var(--sp3)}
+  code,.mono{font-family:'IBM Plex Mono',monospace}
+
+  /* steps */
+  .steps{counter-reset:s; display:grid; gap:var(--sp3)}
+  .step{background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--blue); padding:var(--sp4) var(--sp5); position:relative}
+  .step::before{counter-increment:s; content:counter(s); position:absolute; left:-15px; top:var(--sp4);
+    width:28px; height:28px; border-radius:50%; background:var(--blue); color:#fff; font-size:14px; font-weight:600;
+    display:flex; align-items:center; justify-content:center}
+  .step h3{margin:0 0 4px; font-size:16px; font-weight:600}
+  .step p{margin:0; font-size:14px; color:var(--muted)}
+  .step .cmd{display:block; margin-top:8px; background:var(--ink); color:#e0e0e0; font-size:12px; padding:8px 12px; overflow-x:auto}
+  .pill{display:inline-block; font-size:11px; font-weight:600; padding:2px 9px; border-radius:12px; background:var(--blue-20); color:var(--blue-deep)}
+
+  /* mock form */
+  .form{background:var(--surface); border:1px solid var(--border); padding:var(--sp5)}
+  .flabel{font-size:12px; color:var(--muted); margin:var(--sp4) 0 6px}
+  .flabel:first-child{margin-top:0}
+  .field{border:1px solid var(--border); background:var(--surface-2); padding:9px 12px; font-size:14px}
+  .drop{border:1px dashed var(--blue-40); padding:var(--sp3); background:var(--blue-10)}
+  .file{display:flex; justify-content:space-between; align-items:center; font-size:13px; background:var(--surface); border:1px solid var(--border); padding:7px 10px; margin-top:6px}
+  .tag{font-size:10px; font-weight:600; padding:2px 8px; border-radius:12px; background:var(--blue-20); color:var(--blue-deep)}
+  .btn{display:inline-block; margin-top:var(--sp4); background:var(--blue); color:#fff; font-size:14px; font-weight:600; padding:10px 18px; cursor:default}
+
+  /* result */
+  .sec{background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--blue); padding:var(--sp3) var(--sp4); margin-top:8px;
+    opacity:0; transform:translateY(6px); animation:rise .5s ease forwards}
+  .sec.warn{border-left-color:var(--warn)} .sec.human{border-left-color:var(--blue-40); background:var(--blue-10)}
+  .sec b{font-size:14px} .sec .body{font-size:13px; color:var(--muted); margin-top:4px}
+  .sec .src{font-size:11px; color:var(--muted); margin-top:4px}
+  .t-warn{background:var(--warn-bg); color:#8a6d00}.t-human{background:var(--blue-20); color:var(--blue-deep)}
+  @keyframes rise{to{opacity:1; transform:none}}
+  .sec:nth-child(1){animation-delay:.1s}.sec:nth-child(2){animation-delay:.5s}.sec:nth-child(3){animation-delay:.9s}
+  .sec:nth-child(4){animation-delay:1.3s}.sec:nth-child(5){animation-delay:1.7s}.sec:nth-child(6){animation-delay:2.1s}
+
+  .note{background:var(--blue-10); border-left:3px solid var(--blue); padding:var(--sp4) var(--sp5); font-size:14px; color:var(--ink-2); margin-top:var(--sp5)}
+  table{width:100%; border-collapse:collapse; background:var(--surface); font-size:13px; margin-top:var(--sp3)}
+  th,td{text-align:left; padding:8px 12px; border-bottom:1px solid var(--border)}
+  th{background:var(--ink); color:#fff; font-size:11px; text-transform:uppercase; letter-spacing:.03em}
+  footer{margin-top:var(--sp8); padding-top:var(--sp4); border-top:1px solid var(--border); font-size:12px; color:var(--muted); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px}
+  @media(max-width:560px){.wrap{padding-left:var(--sp5)}.step::before{left:-12px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="dam-architecture.html">Architecture</a>
+  <a href="dam-agent-flow.html">Agent flow</a>
+  <a class="on" href="dam-drafting-showcase.html">Drafting showcase</a>
+</nav>
+<div class="wrap">
+  <div class="eyebrow">Danantara DAM · Showcase</div>
+  <h1>NOTA Drafting — <b>step by step</b></h1>
+  <p class="lead">Scenario: PTPN III asset divestiture (Rp420 bn). Three files, three fields, one button — and a first-draft NOTA with every line sourced and judgment left to the human.</p>
+
+  <h2>The document package</h2>
+  <p style="font-size:14px; color:var(--muted); margin:0 0 var(--sp3)">From <code>samples/</code> — real PDFs/DOCX in Bahasa Indonesia + English.</p>
+  <table>
+    <tr><th>File</th><th>doc_type</th><th>What it feeds</th></tr>
+    <tr><td class="mono">A1_surat_permohonan_divestasi.pdf</td><td>submission</td><td>request letter — entity, Rp420 bn, dates</td></tr>
+    <tr><td class="mono">A2_lampiran_valuasi.pdf</td><td>submission</td><td>valuation annex (planted 130% error)</td></tr>
+    <tr><td class="mono">A3_draf_nota_dinas.docx</td><td>review_note</td><td>prior draft (planted Rp415 bn mismatch)</td></tr>
+  </table>
+
+  <h2>Run it — the steps</h2>
+  <div class="steps">
+    <div class="step"><h3>Set your API key <span class="pill">once</span></h3><p>Edit <code>.env</code> line 3:</p><span class="cmd">ANTHROPIC_API_KEY=sk-ant-&lt;your-key&gt;</span></div>
+    <div class="step"><h3>Start the platform <span class="pill">once</span></h3><p>Then check <code>localhost:8010/health</code> → <code>{"status":"ok"}</code>.</p><span class="cmd">docker compose up -d</span></div>
+    <div class="step"><h3>Load the demo data <span class="pill">once</span></h3><p>Generates the PDFs, then creates 3 cases + ingests files. Copy the PTPN III <code>case_id</code> from the output.</p><span class="cmd">backend/.venv/bin/python scripts/generate_samples.py
+backend/.venv/bin/python scripts/seed.py</span></div>
+    <div class="step"><h3>Open the app → NOTA Drafting</h3><p>Go to <code>localhost:3010</code>, then click <b>NOTA Drafting</b> in the left menu.</p></div>
+    <div class="step"><h3>Fill the form &amp; generate</h3><p>Paste the <code>case_id</code>, (files already ingested by seed), optionally add instructions, then click <b>Generate first draft</b>. ~40 s.</p></div>
+  </div>
+
+  <h2>The form</h2>
+  <div class="form">
+    <div class="flabel">Case ID</div>
+    <div class="field mono">case_f8b6348515</div>
+    <div class="flabel">Submission documents (drag &amp; drop — PDF / DOCX / TXT)</div>
+    <div class="drop">
+      <div class="file"><span>📄 A1_surat_permohonan_divestasi.pdf</span><span class="tag">submission · confidential</span></div>
+      <div class="file"><span>📄 A2_lampiran_valuasi.pdf</span><span class="tag">submission · confidential</span></div>
+      <div class="file"><span>📄 A3_draf_nota_dinas.docx</span><span class="tag">review note</span></div>
+    </div>
+    <div class="flabel">Instructions (optional)</div>
+    <div class="field" style="color:var(--muted)">Fokus pada ringkasan transaksi divestasi dan dasar valuasi.</div>
+    <span class="btn">⚙ Generate first draft</span>
+  </div>
+
+  <h2>The result <span style="font-size:13px; color:var(--muted)">(live output · claude-sonnet-4-6)</span></h2>
+  <div>
+    <div class="sec"><b>Latar Belakang</b> <span class="tag">AI</span><div class="body">PT Perkebunan Nusantara III (Persero) mengajukan permohonan persetujuan divestasi atas aset Kebun Sei Meranti…</div><div class="src mono">sources: doc#0</div></div>
+    <div class="sec"><b>Ringkasan Permohonan</b> <span class="tag">AI</span><div class="body">Surat Nomor 042/PTPN-III/DIV/VI/2026, 3 Juni 2026 · nilai appraisal Rp420 miliar vs nilai buku Rp371 miliar…</div><div class="src mono">sources: doc#0</div></div>
+    <div class="sec warn"><b>Dasar Hukum &amp; Referensi</b> <span class="tag t-warn">insufficient source</span><div class="body">[DATA TIDAK TERSEDIA — mohon dilengkapi] — the package has no legal references; the AI flags the gap instead of inventing regulations.</div></div>
+    <div class="sec"><b>Kronologi &amp; Status / Data Pendukung</b> <span class="tag">AI</span><div class="body">Penilaian KJPP independen · target penyelesaian 90 hari kerja · ikhtisar nilai buku/appraisal…</div><div class="src mono">sources: doc#0</div></div>
+    <div class="sec human"><b>Analisis &amp; Pertimbangan</b> <span class="tag t-human">human judgment</span><div class="body">Left blank — reserved for the reviewer. The AI is structurally blocked from writing here.</div></div>
+    <div class="sec human"><b>Rekomendasi</b> <span class="tag t-human">human judgment</span><div class="body">Left blank — reserved for the reviewer.</div></div>
+  </div>
+
+  <div class="note">
+    <b>Three things to point out in a demo:</b> (1) every drafted sentence carries a source — nothing ungrounded; (2) the legal-basis section flags missing data instead of hallucinating; (3) the judgment sections stay human. Then open <b>Consistency</b> to watch it catch the Rp415-vs-420 and 130%-vs-13.2% defects, and <b>Audit</b> for the per-step models (haiku → haiku → sonnet → opus).
+  </div>
+
+  <h2>Or by API</h2>
+  <table>
+    <tr><th>Goal</th><th>Call</th></tr>
+    <tr><td>Draft only</td><td class="mono">POST /api/agents/draft {"case_id","instructions"}</td></tr>
+    <tr><td>Whole package</td><td class="mono">POST /api/agents/pipeline/&lt;case_id&gt;</td></tr>
+  </table>
+  <p style="font-size:13px; color:var(--muted); margin-top:var(--sp3)">Full runbook: <code>docs/SHOWCASE-DRAFTING.md</code>. Note: per-paragraph Accept/Edit/Reject is Sprint 3.2 (planned); today the draft renders read-only with sources.</p>
+
+  <footer>
+    <span>DAM Governance Intelligence Platform · drafting showcase</span>
+    <span>IBM × BPI Danantara · Confidential — Internal Use Only</span>
+  </footer>
+</div>
+</body>
+</html>
