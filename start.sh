@@ -30,6 +30,13 @@ free_port() {
   fi
 }
 
+# Load root .env (ANTHROPIC_API_KEY etc.) so the local backend sees it —
+# Docker Compose auto-loads .env on its own.
+if [ -f "$ROOT/.env" ]; then
+  set -a; . "$ROOT/.env"; set +a
+  echo "==> Loaded .env ($([ -n "${ANTHROPIC_API_KEY:-}" ] && [ "${ANTHROPIC_API_KEY}" != "sk-ant-..." ] && echo "ANTHROPIC_API_KEY set" || echo "ANTHROPIC_API_KEY NOT set — agent endpoints will fail"))"
+fi
+
 echo "==> Freeing ports"
 free_port "$BACKEND_PORT"
 free_port "$FRONTEND_PORT"
