@@ -26,7 +26,8 @@ serving:
 roles:
   drafting:                        # NOTA descriptive sections (FR-1)
     managed:
-      primary: claude-opus-4-8
+      primary: claude-sonnet-4-6   # quality/cost sweet spot for formal bilingual drafting
+      escalation: claude-opus-4-8  # board-bound / high-risk cases (risk-tier gated)
     self_host:
       primary: Qwen3-235B-A22B     # MoE — best self-host quality
       small_footprint_alt: Qwen3-32B
@@ -53,23 +54,31 @@ roles:
       notes: self_host is the ONLY tier available on edge/air-gapped sites
 
 # Pre-LLM document processing (ingestion pipeline, before chunking).
-# These are not chat models — they convert documents to grounded structure.
+# These convert documents to grounded structure — not chat models.
+#
+# OCR strategy: Docling PRIMARY (it does layout/structure AND orchestrates OCR
+# for scanned pages), Tesseract as the FALLBACK OCR engine (low Docling-OCR
+# confidence, or ind/eng-specific recognition), multimodal model as last resort.
+# Fully local — zero external egress (edge/air-gapped compatible, RTE-005).
 document_processing:
-  structure_parser:
-    model: granite-docling          # IBM Granite-Docling (docling pipeline)
+  primary:
+    engine: granite-docling         # IBM Granite-Docling VLM + docling pipeline
     tier: self_host
-    purpose: layout analysis, tables, reading order, numbered-clause structure;
-             PDF/DOCX -> structured markdown consumed by semantic chunking (2.2)
-  ocr:
+    does: [layout, tables, reading_order, numbered_clauses, ocr]
+    output: structured markdown -> semantic chunking (2.2)
+  fallback_ocr:
     engine: tesseract
     tier: self_host
     languages: [ind, eng]           # Bahasa Indonesia + English traineddata
-    purpose: text layer for scanned/born-paper pages
+    when: Docling OCR confidence below threshold, or no text layer present
+  escalation:
+    role: multimodal_edge           # Gemma 3 27B / Opus vision (config.roles)
+    when: still low-confidence OCR, image-heavy, or handwritten pages
+    note: output still passes the FR-1 grounding gate
   routing:
-    - born-digital PDF/DOCX -> granite-docling structure parse
-    - scanned page / missing text layer -> tesseract OCR -> granite-docling
-    - low-confidence OCR or image-heavy content -> multimodal_edge role for
-      page-level understanding (output still passes the grounding gate)
+    - born-digital PDF/DOCX                    -> docling (structure; no OCR needed)
+    - scanned / no text layer                  -> docling OCR; if low conf -> tesseract
+    - still low-conf / image-heavy / handwritten -> multimodal_edge model
 
 routing_policies:
   - id: RTE-001

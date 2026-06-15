@@ -59,7 +59,7 @@ Every role defines **both tiers** — an online foundation API model and a self-
 
 | Task role | Used by | Online API (managed) | Self-host |
 |---|---|---|---|
-| Drafting | NOTA descriptive sections (FR-1) | `claude-opus-4-8` | **Qwen3-235B-A22B** (or Qwen3-32B small-footprint) |
+| Drafting | NOTA descriptive sections (FR-1) | `claude-sonnet-4-6` (→ `claude-opus-4-8` for board-bound, risk-tier gated) | **Qwen3-235B-A22B** (or Qwen3-32B small-footprint) |
 | Reasoning specialist | Consistency analysis, contradiction detection (FR-2) | `claude-opus-4-8` (adaptive thinking) | **DeepSeek-R1-Distill-Qwen-32B** |
 | Fast extraction / classification | Field extraction, doc classification, routing explanation (FR-4) | `claude-haiku-4-5` | **Mistral Small 3.x** |
 | Multimodal / edge | Image-heavy documents; edge / air-gapped sites | `claude-opus-4-8` (vision, high-res) | **Gemma 3 27B** (upgrade path: Gemma 4) |
@@ -68,9 +68,11 @@ Every role defines **both tiers** — an online foundation API model and a self-
 
 | Stage | Engine | Role |
 |---|---|---|
-| Structure parsing | **Granite-Docling** (self-host) | Layout, tables, reading order, numbered-clause structure → structured markdown consumed by chunking (2.2) |
-| OCR | **Tesseract** (self-host, `ind` + `eng`) | Text layer for scanned/born-paper pages, then through Docling |
-| Escalation | multimodal/edge role | Low-confidence OCR or image-heavy pages → page-level model understanding (output still passes the grounding gate) |
+| **Primary** | **Granite-Docling** (self-host) | Layout, tables, reading order, numbered-clause structure **and OCR** for scanned pages → structured markdown consumed by chunking (2.2) |
+| **Fallback OCR** | **Tesseract** (self-host, `ind` + `eng`) | When Docling OCR confidence is low or no text layer is present |
+| **Escalation** | multimodal/edge role (Gemma / Opus vision) | Still-low-confidence, image-heavy, or handwritten pages → page-level understanding (output still passes the grounding gate) |
+
+Order: **Docling → Tesseract fallback → multimodal**. Born-digital docs skip OCR (structure parse only). Fully local — no external egress.
 
 Routing policies (audited per call with the policy id that fired):
 - **RTE-001** managed-tier outage or rate-limit exhaustion → role fallback model
