@@ -34,3 +34,6 @@ transcription/*.transcript.md
 
 # Local run
 .run/
+
+# Backend test artifacts
+backend/.test-data/
