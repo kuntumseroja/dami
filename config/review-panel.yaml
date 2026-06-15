@@ -1,0 +1,117 @@
+# NOTA Review Panel — agent roster and governance rubric.
+#
+# A NOTA is a corporate-action governance memo for an SOE (asset disposal,
+# acquisition, investment, leasing). After the drafting agent produces the
+# descriptive draft, this panel reviews it the way a second-line governance/
+# legal/risk function and an investment committee would — specialist review,
+# bounded cross-examination, grounded adjudication — before a human approver
+# (the four-eyes checker) signs off. The AI never decides; it surfaces
+# findings with citations and a recommendation.
+#
+# Design is grounded in: OECD SOE Guidelines 2024, BUMN Reg PER-2/MBU/02/2023,
+# the IIA Three Lines Model, the four-eyes principle, and the multi-agent
+# review literature (Du 2023 debate; Zheng 2023 LLM-as-judge biases; Madaan
+# 2023 Self-Refine; Bai 2022 Constitutional AI; Wynn 2025 debate failure
+# modes; Anthropic multi-agent guidance). See docs/NOTA-REVIEW-PANEL.md.
+
+# --- Governance rubric: the dimensions every NOTA is checked against ----------
+# Each maps to a governance source and a default severity (overridable by DAM
+# compliance officers, mirroring the consistency-checker taxonomy).
+dimensions:
+  - id: DIM-LEGAL
+    name: Legal & regulatory compliance
+    source: OECD SOE 2024; BUMN PER-2/MBU/02/2023
+    default_severity: critical
+  - id: DIM-AUTHORITY
+    name: Delegation-of-authority / approval-threshold correctness
+    source: BUMN PER-2/2023; delegation matrix
+    default_severity: critical
+  - id: DIM-FINANCE
+    name: Financial & valuation soundness
+    source: OECD materiality; IC due-diligence practice
+    default_severity: critical
+  - id: DIM-RISK
+    name: Risk assessment & mitigation completeness
+    source: OECD SOE 2024; BUMN PER-2/2023
+    default_severity: major
+  - id: DIM-CONFLICT
+    name: Conflict-of-interest / related-party disclosure
+    source: OECD RPT; BUMN PER-2/2023; business-judgment-rule record
+    default_severity: critical
+  - id: DIM-DISCLOSURE
+    name: Completeness & disclosure / transparency
+    source: OECD disclosure; IC standard-format memo
+    default_severity: major
+  - id: DIM-PRECEDENT
+    name: Precedent & strategy consistency
+    source: IC best practice (mandate / IPS alignment)
+    default_severity: major
+  - id: DIM-ACCURACY
+    name: Factual accuracy vs. source submission (grounding)
+    source: platform FR-1 hard gate
+    default_severity: critical
+
+# --- Panel roles -------------------------------------------------------------
+# Specialist reviewers map to dimension clusters; each is a distinct "lens"
+# (heterogeneity is what makes debate help rather than hurt — Wynn 2025).
+# model_role points at config/models.yaml so each lens can run on the best
+# tier (reasoning specialist for risk/legal, fast tier for completeness).
+roles:
+  - id: legal_reviewer
+    title: Legal & Compliance Reviewer
+    dimensions: [DIM-LEGAL, DIM-AUTHORITY, DIM-CONFLICT]
+    model_role: reasoning            # DeepSeek-R1 / claude-opus-4-8
+    stance: skeptical                # prompted to find non-compliance, not to approve
+  - id: financial_reviewer
+    title: Financial & Valuation Reviewer
+    dimensions: [DIM-FINANCE]
+    model_role: reasoning
+    stance: skeptical
+  - id: risk_reviewer
+    title: Risk Reviewer
+    dimensions: [DIM-RISK]
+    model_role: reasoning
+    stance: skeptical
+  - id: governance_reviewer
+    title: Governance & Disclosure Reviewer
+    dimensions: [DIM-DISCLOSURE, DIM-PRECEDENT]
+    model_role: drafting             # strong general model
+    stance: skeptical
+  - id: accuracy_verifier
+    title: Accuracy Verifier
+    dimensions: [DIM-ACCURACY]
+    model_role: extraction           # fast, deterministic source-checking
+    stance: literal                  # every claim must resolve to a source span
+
+# --- Adjudicator (LLM-as-judge with bias controls) ---------------------------
+adjudicator:
+  id: chair
+  title: Review Chair
+  model_role: reasoning
+  # Mitigations for Zheng 2023 judge biases:
+  controls:
+    - randomize_finding_order        # cancel position bias
+    - ignore_length                  # cancel verbosity bias
+    - cross_family_judge             # chair from a different model family than reviewers (self-enhancement)
+    - require_citation_per_finding   # no finding survives without a source span (accuracy gate)
+    - confidence_hidden_until_scored # avoid confidence cascades (Wynn 2025)
+
+# --- Debate / flow policies --------------------------------------------------
+flow:
+  rounds:
+    - independent_review             # each reviewer scores its dimensions blind to the others
+    - cross_examination             # reviewers see peers' findings ONCE and may challenge/concede with reasons
+    - adjudication                  # chair deduplicates, resolves disagreement, scores severity, recommends
+  policies:
+    - id: RVW-001
+      desc: Heterogeneous lenses + explicit skeptical stance — debate must surface dissent, not consensus (Wynn 2025)
+    - id: RVW-002
+      desc: One cross-examination round only — bounded to control cost (~15x token caution, Anthropic) and conformity drift
+    - id: RVW-003
+      desc: Every finding cites a resolvable source span or a fired rule id; uncited findings are dropped (FR-1 gate)
+    - id: RVW-004
+      desc: Deterministic dimensions (DIM-AUTHORITY thresholds) decided by the rule engine, not the panel — AI explains only
+    - id: RVW-005
+      desc: Panel depth gated by risk tier — low-risk skips cross-examination; high-risk runs full panel + dissent log
+    - id: RVW-006
+      desc: AI never approves; output is a recommendation + findings for the human four-eyes checker; full debate audited

@@ -89,8 +89,9 @@
 | 3.7 | **Board-stage Critical gate**: progression to board preparation blocked while unresolved Critical items exist; bypass only via dual-approval override, logged as compliance incident | FR-2, AC-2.5; NFR compliance | Stage transition denied with named Critical items; override path audited |
 | 3.8 | **FR-3 version control**: full version history (author/timestamp/change summary), checkout/check-in locking, diff view between versions, immutability after review-queue submission, propagation check on master edit | FR-3 | Master edit surfaces out-of-sync sections in dependents; concurrent-edit conflict prevented; post-queue versions immutable |
 | 3.9 | Checker injection-test harness: monthly 10-file injected-discrepancy runs; precision/recall per type (≥93% numeric per AC-2.2, ≥85% semantic recall per AC-2.3); baseline freeze + model-update gate | FR-2 metrics | Injection manifest + automated scoring; CI-runnable |
+| 3.10 | **NOTA Review Panel — specialist-review tier** (design: [NOTA-REVIEW-PANEL.md](NOTA-REVIEW-PANEL.md), roster: [config/review-panel.yaml](../config/review-panel.yaml)): heterogeneous specialist reviewers (legal/compliance, financial/valuation, risk, governance/disclosure) + accuracy verifier + bias-controlled chair, scoring a draft against the governance rubric (OECD/BUMN dimensions). Every finding cited (FR-1 gate); thresholds from the rule engine, not the panel; risk-tier-gated depth; full debate audited. Successor to the single-pass checker; **full debating panel (cross-examination) is the Phase-2 / FR-10 bridge** | FR-2 (deepens), FR-10 seed, §10.1 | Specialist tier produces a cited review report a senior reviewer accepts/edits; no uncited finding survives; depth gated by risk tier; reviewers run on `models.yaml` reasoning tier |
 
-**Exit:** FR-1, FR-2, FR-3 meet their PRD acceptance criteria end-to-end with the measurement machinery the PRD demands.
+**Exit:** FR-1, FR-2, FR-3 meet their PRD acceptance criteria end-to-end with the measurement machinery the PRD demands; the review panel deepens FR-2 toward the agentic-governance vision.
 
 ---
 
