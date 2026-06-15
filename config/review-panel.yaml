@@ -50,6 +50,10 @@ dimensions:
     name: Factual accuracy vs. source submission (grounding)
     source: platform FR-1 hard gate
     default_severity: critical
+  - id: DIM-CALC
+    name: Arithmetic / statistical reconciliation (recomputed)
+    source: PRD addendum 2026-06-15 (A1) — stakeholder session
+    default_severity: critical
 
 # --- Panel roles -------------------------------------------------------------
 # Specialist reviewers map to dimension clusters; each is a distinct "lens"
@@ -67,6 +71,13 @@ roles:
     dimensions: [DIM-FINANCE]
     model_role: reasoning
     stance: skeptical
+  - id: financial_reconciliation
+    title: Financial & Statistical Reconciliation Agent
+    dimensions: [DIM-CALC]
+    model_role: extraction          # LLM locates the figures...
+    stance: literal
+    compute: deterministic_tool     # ...a calculator/code-exec tool recomputes — never LLM mental math
+    # Catches the "13% vs 130%" / wrong numerator-denominator class of error (PRD addendum A1)
   - id: risk_reviewer
     title: Risk Reviewer
     dimensions: [DIM-RISK]
@@ -115,3 +126,7 @@ flow:
       desc: Panel depth gated by risk tier — low-risk skips cross-examination; high-risk runs full panel + dissent log
     - id: RVW-006
       desc: AI never approves; output is a recommendation + findings for the human four-eyes checker; full debate audited
+    - id: RVW-007
+      desc: Arithmetic (DIM-CALC) is recomputed by a deterministic calculator/code-exec tool, never by LLM mental math; findings cite source numbers + recomputed value (PRD addendum A1)
+    - id: RVW-008
+      desc: Chair report includes an explicit confidence score + unresolved-issues / needs-human-review block (PRD addendum A6)

@@ -25,3 +25,9 @@ dist/
 # Data
 data/
 *.db
+
+# Raw meeting transcripts (bulky, noisy machine output) — keep the curated
+# *-summary.md, which is the cited source for PRD addenda
+transcription/*.transcript.json
+transcription/*.transcript.md
+*.aac

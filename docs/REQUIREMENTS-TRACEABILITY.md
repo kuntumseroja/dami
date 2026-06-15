@@ -1,8 +1,10 @@
 # Requirements traceability — PRD ↔ implementation ↔ sprint plan
 
-**Source of truth:** [dam-prd.pdf](../dam-prd.pdf) (PRD v1.0, June 2026). Requirement ids, priorities, acceptance criteria (AC-x.y), and metric thresholds below are the PRD's.
+**Source of truth:** [dam-prd.pdf](../dam-prd.pdf) (PRD v1.0, June 2026), extended by [PRD-ADDENDUM-2026-06-15.md](PRD-ADDENDUM-2026-06-15.md) (stakeholder capability session — items A1–A7). Requirement ids, priorities, acceptance criteria (AC-x.y), and metric thresholds below are the PRD's.
 Status legend: ✅ meets PRD spec · 🟦 partial (working; gap named, delivery story scheduled) · ⬜ planned · 🗺 Phase 2.
-Last updated after **Sprint 1** (`cf56385`) and PRD alignment.
+Last updated after **Sprint 1** (`cf56293`), PRD alignment, and the 2026-06-15 addendum.
+
+**Addendum A1–A7 → disposition:** A1 financial reconciliation → Sprint 3.11 (new); A2 ICR → Sprint 2.10; A3 mandatory fields → Sprint 3.1; A4 disclaimers → Sprint 3.2; A5 cover sheet → Sprint 3.1; A6 confidence/open-issues → Sprint 3.10; A7 showcase demo → Sprint 6.6. Everything else in the session validated existing FRs (no change).
 
 ## 1. Functional requirements (PRD §7–8) → implementation → delivery
 
