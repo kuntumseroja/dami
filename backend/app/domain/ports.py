@@ -31,6 +31,18 @@ class LLMGateway(ABC):
         """Plain-text completion."""
 
 
+class ModelRouter(ABC):
+    """Selects the right model per task role (drafting, extraction, reasoning,
+    multimodal_edge) from the model registry, and returns a role-bound
+    `LLMGateway`. Use cases ask for a role; the router applies the cost-tiered
+    mix and routing policies (config/models.yaml). The returned gateway's
+    `.model` reflects the resolved model, so audit logging is unchanged."""
+
+    @abstractmethod
+    def gateway(self, role: str) -> "LLMGateway":
+        """Return an LLMGateway bound to the model resolved for `role`."""
+
+
 class Embedder(ABC):
     @abstractmethod
     async def embed_texts(self, texts: list[str]) -> list[list[float]]: ...

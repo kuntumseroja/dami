@@ -3,9 +3,8 @@
 The rule engine decides; the model explains. The explanation is grounded in
 the fired rules and never overrides them.
 """
-from app.domain.models import new_trace_id
-from app.domain.models import RoutingDecision, RoutingRequest
-from app.domain.ports import AuditLog, CaseRepository, LLMGateway
+from app.domain.models import RoutingDecision, RoutingRequest, new_trace_id
+from app.domain.ports import AuditLog, CaseRepository, ModelRouter
 from app.domain.rules import evaluate
 
 EXPLAIN_SYSTEM = """You explain Danantara DAM routing decisions to governance \
@@ -17,10 +16,11 @@ automation. Never contradict or second-guess the rule outcomes."""
 
 
 async def route_request(
-    request: RoutingRequest, *, llm: LLMGateway,
+    request: RoutingRequest, *, router: ModelRouter,
     repository: CaseRepository, audit: AuditLog,
 ) -> RoutingDecision:
     trace_id = new_trace_id()
+    llm = router.gateway("extraction")   # routing explanation is light — cheap tier
     outcome = evaluate(request)
 
     explanation = await llm.complete(

@@ -240,7 +240,14 @@ class DraftRequest(BaseModel):
 
 class SubmissionFields(BaseModel):
     requesting_unit: str
-    request_type: str
+    request_type: str                # free-text description as written in the submission
+    # Canonical category for the deterministic routing rule engine. The
+    # extractor classifies the request into one of these so SOP selection
+    # never has to parse free text.
+    request_category: Literal[
+        "asset_disposal", "asset_acquisition", "investment",
+        "asset_lease", "asset_utilization", "other",
+    ] = "other"
     amount_idr: float | None
     counterparty: str | None
     summary: str

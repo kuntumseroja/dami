@@ -7,6 +7,7 @@ from functools import lru_cache
 from app.adapters.audit_jsonl import JsonlAuditLog
 from app.adapters.embedder_hash import HashEmbedder
 from app.adapters.llm_claude import ClaudeGateway
+from app.adapters.model_router import ConfiguredModelRouter
 from app.adapters.repo_memory import InMemoryCaseRepository
 from app.adapters.repo_postgres import PostgresCaseRepository
 from app.adapters.storage_local import LocalStorage
@@ -17,6 +18,7 @@ from app.domain.ports import (
     DocumentSource,
     Embedder,
     LLMGateway,
+    ModelRouter,
     ObjectStorage,
     VectorStore,
 )
@@ -26,7 +28,8 @@ from app.infrastructure.config import Settings, get_settings
 @dataclass
 class Container:
     settings: Settings
-    llm: LLMGateway
+    llm: LLMGateway          # default gateway (DAM_MODEL) — back-compat / direct use
+    router: ModelRouter      # role-based model selection (cost-tiered mix)
     embedder: Embedder
     vectors: VectorStore
     repository: CaseRepository
@@ -86,6 +89,7 @@ def build_container(settings: Settings | None = None) -> Container:
     return Container(
         settings=settings,
         llm=ClaudeGateway(settings.anthropic_api_key, settings.dam_model),
+        router=ConfiguredModelRouter(settings.anthropic_api_key or None),
         embedder=embedder,
         vectors=vectors,
         repository=repository,

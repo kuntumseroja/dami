@@ -6,9 +6,8 @@ emitted as empty placeholders — they belong to the human reviewer by design.
 """
 from pydantic import BaseModel
 
-from app.domain.models import new_trace_id
-from app.domain.models import DraftRequest, NotaDraft, NotaSection
-from app.domain.ports import AuditLog, CaseRepository, Embedder, LLMGateway, VectorStore
+from app.domain.models import DraftRequest, NotaDraft, NotaSection, new_trace_id
+from app.domain.ports import AuditLog, CaseRepository, Embedder, ModelRouter, VectorStore
 from app.use_cases.retrieval import format_context, retrieve
 
 # Default NOTA structure; Sprint 3 moves this into the template store.
@@ -51,10 +50,11 @@ mohon dilengkapi]" rather than inventing content."""
 
 
 async def draft_nota(
-    request: DraftRequest, *, llm: LLMGateway, embedder: Embedder,
+    request: DraftRequest, *, router: ModelRouter, embedder: Embedder,
     vectors: VectorStore, repository: CaseRepository, audit: AuditLog,
 ) -> NotaDraft:
     trace_id = new_trace_id()
+    llm = router.gateway("drafting")
     chunks = await retrieve(
         "submission background legal basis chronology supporting data",
         embedder=embedder, vectors=vectors,

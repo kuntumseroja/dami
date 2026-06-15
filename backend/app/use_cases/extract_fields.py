@@ -1,20 +1,26 @@
 """Extraction use case — pulls structured fields from ingested submissions."""
-from app.domain.models import new_trace_id
-from app.domain.models import SubmissionFields
-from app.domain.ports import AuditLog, Embedder, LLMGateway, VectorStore
+from app.domain.models import SubmissionFields, new_trace_id
+from app.domain.ports import AuditLog, Embedder, ModelRouter, VectorStore
 from app.use_cases.retrieval import format_context, retrieve
 
 EXTRACTION_SYSTEM = """You extract structured facts from Danantara governance \
 submission documents. Use ONLY the provided sources. If a field is not present \
 in the sources, return null — never guess. Indonesian and English inputs are \
-both expected."""
+both expected.
+
+Also classify the request into `request_category` — one of asset_disposal, \
+asset_acquisition, investment, asset_lease, asset_utilization, or other — so \
+the routing rule engine can select the correct SOP. (e.g. "divestasi"/sale = \
+asset_disposal; "penyertaan modal"/equity = investment; "sewa"/lease = \
+asset_lease.)"""
 
 
 async def extract_submission_fields(
-    case_id: str, *, llm: LLMGateway, embedder: Embedder,
+    case_id: str, *, router: ModelRouter, embedder: Embedder,
     vectors: VectorStore, audit: AuditLog,
 ) -> tuple[SubmissionFields, str]:
     trace_id = new_trace_id()
+    llm = router.gateway("extraction")
     chunks = await retrieve(
         "request type amount counterparty requesting unit dates",
         embedder=embedder, vectors=vectors,

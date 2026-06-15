@@ -171,7 +171,7 @@ async def agent_draft(
     user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
     c: Container = Depends(deps),
 ):
-    return await draft_nota(request, llm=c.llm, embedder=c.embedder,
+    return await draft_nota(request, router=c.router, embedder=c.embedder,
                             vectors=c.vectors, repository=c.repository, audit=c.audit)
 
 
@@ -181,7 +181,7 @@ async def agent_consistency(
     user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
     c: Container = Depends(deps),
 ):
-    return await check_consistency(case_id, llm=c.llm, embedder=c.embedder,
+    return await check_consistency(case_id, router=c.router, embedder=c.embedder,
                                    vectors=c.vectors, repository=c.repository,
                                    audit=c.audit)
 
@@ -192,7 +192,7 @@ async def agent_route(
     user: User = Depends(get_current_user),
     c: Container = Depends(deps),
 ):
-    return await route_request(request, llm=c.llm, repository=c.repository,
+    return await route_request(request, router=c.router, repository=c.repository,
                                audit=c.audit)
 
 
@@ -204,7 +204,7 @@ async def agent_pipeline(
 ):
     try:
         return await run_case_pipeline(
-            case_id, user, llm=c.llm, embedder=c.embedder, vectors=c.vectors,
+            case_id, user, router=c.router, embedder=c.embedder, vectors=c.vectors,
             repository=c.repository, audit=c.audit)
     except KeyError as exc:
         raise HTTPException(404, str(exc)) from exc
