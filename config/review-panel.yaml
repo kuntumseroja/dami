@@ -55,49 +55,86 @@ dimensions:
     source: PRD addendum 2026-06-15 (A1) — stakeholder session
     default_severity: critical
 
-# --- Panel roles -------------------------------------------------------------
-# Specialist reviewers map to dimension clusters; each is a distinct "lens"
-# (heterogeneity is what makes debate help rather than hurt — Wynn 2025).
-# model_role points at config/models.yaml so each lens can run on the best
-# tier (reasoning specialist for risk/legal, fast tier for completeness).
+# --- Panel roles → Danantara's actual layered review governance ---------------
+# Level 1 (Technical & Advisory): one AI agent per relevant Managing Director,
+# each a distinct skeptical "lens" (heterogeneity is what makes debate help —
+# Wynn 2025). model_role points at config/models.yaml so each lens runs on the
+# right tier. The agents REVIEW and surface findings; humans DECIDE.
+#
+# Danantara flow:
+#   Nota Dinas → MD/Technical → Risk & Investment Committees → C-Level (CIO/COO)
+#   → CEO → Dewan Pengawas → President  (approval level by scale/significance)
 roles:
-  - id: legal_reviewer
-    title: Legal & Compliance Reviewer
+  - id: md_investment
+    title: MD Investment Agent
+    danantara_role: Managing Director — Investment
+    dimensions: [DIM-FINANCE, DIM-PRECEDENT]
+    reviews: Commercial feasibility, IRR/NPV, fit to national investment roadmap, BUMN fundamentals
+    model_role: reasoning
+    stance: skeptical
+  - id: md_risk
+    title: MD Risk & Sustainability Agent
+    danantara_role: Managing Director — Risk & Sustainability
+    dimensions: [DIM-RISK]
+    reviews: Deal/geopolitical/macro/liquidity risk profile + ESG compliance
+    model_role: reasoning
+    stance: skeptical
+  - id: md_legal
+    title: MD Legal & Compliance Agent
+    danantara_role: Managing Director — Legal & Compliance
     dimensions: [DIM-LEGAL, DIM-AUTHORITY, DIM-CONFLICT]
-    model_role: reasoning            # DeepSeek-R1 / claude-opus-4-8
-    stance: skeptical                # prompted to find non-compliance, not to approve
-  - id: financial_reviewer
-    title: Financial & Valuation Reviewer
-    dimensions: [DIM-FINANCE]
+    reviews: Transaction legality, restructuring, UU PT/BUMN compliance, contract drafts
+    model_role: reasoning
+    stance: skeptical
+  - id: md_finance
+    title: MD Finance Agent
+    danantara_role: Managing Director — Finance
+    dimensions: [DIM-FINANCE, DIM-DISCLOSURE]
+    reviews: Funding structure, cash-flow adequacy, consolidation impact, capital allocation
     model_role: reasoning
     stance: skeptical
   - id: financial_reconciliation
     title: Financial & Statistical Reconciliation Agent
+    danantara_role: supports MD Finance
     dimensions: [DIM-CALC]
+    reviews: Recompute %/totals/ratios — catch "13% vs 130%" (PRD addendum A1)
     model_role: extraction          # LLM locates the figures...
     stance: literal
     compute: deterministic_tool     # ...a calculator/code-exec tool recomputes — never LLM mental math
-    # Catches the "13% vs 130%" / wrong numerator-denominator class of error (PRD addendum A1)
-  - id: risk_reviewer
-    title: Risk Reviewer
-    dimensions: [DIM-RISK]
-    model_role: reasoning
-    stance: skeptical
-  - id: governance_reviewer
-    title: Governance & Disclosure Reviewer
-    dimensions: [DIM-DISCLOSURE, DIM-PRECEDENT]
-    model_role: drafting             # strong general model
-    stance: skeptical
   - id: accuracy_verifier
     title: Accuracy Verifier
     dimensions: [DIM-ACCURACY]
     model_role: extraction           # fast, deterministic source-checking
     stance: literal                  # every claim must resolve to a source span
 
+# --- Danantara review levels (what each stage maps to) -----------------------
+# The AI panel accelerates Levels 1-3 (review); approval levels are HUMAN
+# decisions, gated by the delegation-of-authority rule engine (config/sop).
+levels:
+  - level: 1
+    name: Technical & Advisory Review
+    who: MD agents (Investment, Risk & Sustainability, Legal & Compliance, Finance)
+    panel_stage: independent_review
+  - level: 2
+    name: Committee Evaluation
+    who: Investment Committee + Risk Committee (cross-functional, chaired by Chief Officers)
+    panel_stage: cross_examination     # holistic portfolio view; reconcile risk mitigation vs return
+  - level: 3
+    name: Executive Endorsement
+    who: CIO (long-term value creation) + COO (operational integration / execution readiness)
+    panel_stage: adjudication          # the Chair synthesises into a recommendation
+  - level: approval
+    name: Final Decision (HUMAN — AI never decides)
+    who_by_scale:
+      - ceo: Routine / mid-scale within RKAP, tactical capital-market action
+      - dewan_pengawas: Super-strategic — large divestiture, cross-cluster M&A, global debt
+      - president: Massive fiscal impact / changes state majority ownership / PSN
+    gated_by: config/sop/routing-rules.yaml (APR-002 ceo · APR-003 dewan_pengawas · APR-004 president)
+
 # --- Adjudicator (LLM-as-judge with bias controls) ---------------------------
 adjudicator:
   id: chair
-  title: Review Chair
+  title: Review Chair (synthesises Level 3 endorsement)
   model_role: reasoning
   # Mitigations for Zheng 2023 judge biases:
   controls:

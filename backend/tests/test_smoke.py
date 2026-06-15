@@ -25,13 +25,22 @@ def test_routing_rules_low_value_lease_is_automated():
     assert "SOP-DAM-003" in outcome["sop"]
 
 
-def test_routing_rules_high_value_needs_board():
+def test_routing_rules_super_strategic_needs_dewan_pengawas():
+    # 600B → above CEO ceiling (500B), within Dewan Pengawas band (Danantara levels)
     outcome = evaluate(
         RoutingRequest(case_id="t2", request_type="investment", amount_idr=600_000_000_000)
     )
     assert outcome["approval_required"] is True
-    assert outcome["approval_level"] == "board_of_commissioners"
+    assert outcome["approval_level"] == "dewan_pengawas"
     assert outcome["risk_tier"].value == "high"
+
+
+def test_routing_rules_psn_scale_needs_president():
+    # >5T → Presiden RI (massive fiscal impact / PSN)
+    outcome = evaluate(
+        RoutingRequest(case_id="t3", request_type="investment", amount_idr=8_000_000_000_000)
+    )
+    assert outcome["approval_level"] == "president"
 
 
 def test_unauthenticated_request_rejected_outside_dev(client):

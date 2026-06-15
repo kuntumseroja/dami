@@ -31,20 +31,20 @@ approval_rules:
     approval_required: false
     approval_level: null
   - id: APR-002
-    description: 1B to 50B IDR — directorate approval
-    max_amount_idr: 50_000_000_000
-    approval_required: true
-    approval_level: directorate
-  - id: APR-003
-    description: 50B to 500B IDR — board of directors
+    description: Routine / mid-scale corporate action within RKAP — CEO Danantara
     max_amount_idr: 500_000_000_000
     approval_required: true
-    approval_level: board_of_directors
+    approval_level: ceo                 # Level Persetujuan 1 — CEO Danantara
+  - id: APR-003
+    description: Super-strategic (large divestiture, cross-cluster M&A, global debt) — Dewan Pengawas
+    max_amount_idr: 5_000_000_000_000
+    approval_required: true
+    approval_level: dewan_pengawas      # Level Persetujuan 2 — Dewan Pengawas (collective)
   - id: APR-004
-    description: Above 500B IDR — board of commissioners / shareholder
+    description: Massive fiscal impact / changes state majority ownership / PSN — President RI
     max_amount_idr: null
     approval_required: true
-    approval_level: board_of_commissioners
+    approval_level: president           # Level Persetujuan 3 — Presiden RI
 
 # Risk segmentation — drives automation level (requirement 8).
 risk_rules:
