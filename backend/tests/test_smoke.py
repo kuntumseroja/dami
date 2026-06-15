@@ -2,7 +2,14 @@ from pathlib import Path
 
 from app.domain.models import RoutingRequest
 from app.domain.rules import evaluate
-from tests.conftest import APPROVER, DRAFTER, REVIEWER
+from tests.conftest import (
+    APPROVER,
+    BPI_OVERSIGHT,
+    DAM_DRAFTER,
+    DIM_DRAFTER,
+    DRAFTER,
+    REVIEWER,
+)
 
 
 def test_health(client):
@@ -61,7 +68,8 @@ def test_ingestion_stores_original_and_registers_document(client, tmp_path):
     assert response.status_code == 200, response.text
     result = response.json()
     assert result["chunks_indexed"] >= 1
-    assert result["storage_key"].startswith(f"cases/{case_id}/")
+    # Storage key is namespaced by BPI entity (Phase 2 tenant seam)
+    assert result["storage_key"].startswith(f"DAM/cases/{case_id}/")
     # Original preserved on the storage backend
     assert (Path("./.test-data/objects") / result["storage_key"]).exists()
 
@@ -81,3 +89,50 @@ def test_risk_tier_change_requires_role(client):
                      data={"tier": "low"}, headers=REVIEWER)
     assert ok.status_code == 200
     assert ok.json()["risk_tier"] == "low"
+
+
+# --- Phase 2 foundation: multi-tenancy (FR-9) ---------------------------------
+
+def test_case_carries_bpi_entity_from_creator(client):
+    dam = client.post("/api/cases", data={"title": "DAM case"}, headers=DAM_DRAFTER).json()
+    dim = client.post("/api/cases", data={"title": "DIM case"}, headers=DIM_DRAFTER).json()
+    assert dam["entity"] == "DAM"
+    assert dim["entity"] == "DIM"
+
+
+def test_tenant_isolation_on_list_and_get(client):
+    dim = client.post("/api/cases", data={"title": "DIM only"}, headers=DIM_DRAFTER).json()
+    dim_id = dim["case_id"]
+
+    # A DAM user cannot list or fetch a DIM case
+    dam_list = client.get("/api/cases", headers=DAM_DRAFTER).json()
+    assert all(c["entity"] == "DAM" for c in dam_list)
+    assert dim_id not in [c["case_id"] for c in dam_list]
+    assert client.get(f"/api/cases/{dim_id}", headers=DAM_DRAFTER).status_code == 404
+
+    # BPI oversight sees across entities
+    all_list = client.get("/api/cases", headers=BPI_OVERSIGHT).json()
+    assert dim_id in [c["case_id"] for c in all_list]
+
+
+def test_tenant_isolation_blocks_cross_entity_advance(client):
+    dim = client.post("/api/cases", data={"title": "DIM workflow"}, headers=DIM_DRAFTER).json()
+    dim_id = dim["case_id"]
+    # DAM user attempting to advance a DIM case sees not-found, not the case
+    assert client.post(f"/api/cases/{dim_id}/advance", headers=DAM_DRAFTER).status_code == 404
+
+
+# --- Phase 1 foundation: data classification (FR-5 / §11.1) -------------------
+
+def test_document_carries_classification(client):
+    case = client.post("/api/cases", data={"title": "Classified"}, headers=DAM_DRAFTER).json()
+    case_id = case["case_id"]
+    client.post(
+        "/api/documents/ingest",
+        files={"file": ("secret.txt", b"Restricted submission content")},
+        data={"doc_type": "submission", "case_id": case_id, "classification": "restricted"},
+        headers=DAM_DRAFTER,
+    )
+    docs = client.get(f"/api/cases/{case_id}/documents", headers=DAM_DRAFTER).json()
+    assert docs[0]["classification"] == "restricted"
+    assert docs[0]["entity"] == "DAM"

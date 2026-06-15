@@ -29,3 +29,8 @@ def client():
 DRAFTER = {"X-User-Id": "user-drafter", "X-User-Roles": "drafter"}
 REVIEWER = {"X-User-Id": "user-reviewer", "X-User-Roles": "reviewer"}
 APPROVER = {"X-User-Id": "user-approver", "X-User-Roles": "approver"}
+
+# Phase 2 multi-tenancy: same role, different BPI entity (DAM default vs DIM).
+DAM_DRAFTER = {"X-User-Id": "dam-drafter", "X-User-Roles": "drafter", "X-User-Entity": "DAM"}
+DIM_DRAFTER = {"X-User-Id": "dim-drafter", "X-User-Roles": "drafter", "X-User-Entity": "DIM"}
+BPI_OVERSIGHT = {"X-User-Id": "bpi", "X-User-Roles": "bpi_oversight", "X-User-Entity": "DAM"}

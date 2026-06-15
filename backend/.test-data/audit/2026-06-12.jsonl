@@ -1,7 +1,0 @@
-{"ts": "2026-06-12T09:59:34.776877+00:00", "event": "workflow.case_created", "trace_id": "trc_b9153f1279ca4c00", "case_id": "case_1a32aa1833", "title": "Test case", "actor": "user-drafter"}
-{"ts": "2026-06-12T09:59:34.794073+00:00", "event": "workflow.advanced", "trace_id": "trc_39f10c6d21a044be", "case_id": "case_1a32aa1833", "from": "submission", "to": "evaluation", "actor": "user-drafter", "risk_tier": "medium"}
-{"ts": "2026-06-12T09:59:34.817190+00:00", "event": "workflow.advanced", "trace_id": "trc_a052887103164fdb", "case_id": "case_1a32aa1833", "from": "evaluation", "to": "board", "actor": "user-approver", "risk_tier": "medium"}
-{"ts": "2026-06-12T09:59:34.943186+00:00", "event": "workflow.case_created", "trace_id": "trc_0823062aea5e49bb", "case_id": "case_dd9bbe06a4", "title": "Ingest case", "actor": "user-drafter"}
-{"ts": "2026-06-12T09:59:34.992021+00:00", "event": "document.ingested", "trace_id": "trc_edf4760c523d4a3c", "document_id": "doc_b76d4f06434c", "filename": "submission.txt", "doc_type": "submission", "case_id": "case_dd9bbe06a4", "storage_key": "cases/case_dd9bbe06a4/doc_b76d4f06434c/submission.txt", "chunks_indexed": 1}
-{"ts": "2026-06-12T09:59:35.087405+00:00", "event": "workflow.case_created", "trace_id": "trc_742ced0984b64a13", "case_id": "case_dd26ed6d3a", "title": "Risk case", "actor": "user-drafter"}
-{"ts": "2026-06-12T09:59:35.094375+00:00", "event": "workflow.risk_tier_set", "trace_id": "trc_f9fffc3149ed4b48", "case_id": "case_dd26ed6d3a", "tier": "low", "actor": "user-reviewer"}

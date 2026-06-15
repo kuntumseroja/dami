@@ -19,8 +19,12 @@ class InMemoryCaseRepository(CaseRepository):
     async def save(self, case: Case) -> None:
         self._cases[case.case_id] = case.model_copy(deep=True)
 
-    async def list_all(self) -> list[Case]:
-        return [c.model_copy(deep=True) for c in self._cases.values()]
+    async def list_all(self, entity: str | None = None) -> list[Case]:
+        return [
+            c.model_copy(deep=True)
+            for c in self._cases.values()
+            if entity is None or c.entity.value == entity
+        ]
 
     async def save_document(self, document: GovernanceDocument) -> None:
         self._documents.setdefault(document.case_id or "", []).append(document)

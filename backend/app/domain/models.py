@@ -24,6 +24,40 @@ def new_trace_id() -> str:
     return f"trc_{uuid.uuid4().hex[:16]}"
 
 
+# --- Tenancy (Phase 2 FR-9 seam) ----------------------------------------------
+# Every governed record carries a BPI entity from day one. Phase 1 runs the
+# single entity DAM; Phase 2 turns the platform multi-tenant across the BPI
+# ecosystem (DAM/DIM/DSI) with no schema migration — repositories already
+# scope by this column and the auth context already binds it.
+
+class BPIEntity(str, Enum):
+    DAM = "DAM"   # Danantara Asset Management (Phase 1)
+    DIM = "DIM"   # Danantara Investment Management (Phase 2)
+    DSI = "DSI"   # Danantara Strategic Investments (Phase 2)
+
+
+DEFAULT_ENTITY = BPIEntity.DAM
+
+
+# --- Data classification (Phase 1 FR-5 / §11.1 seam) --------------------------
+# Set at intake; gates which model tier may process a document (router policy
+# RTE-002). Ordered low→high so threshold comparisons are simple.
+
+class DataClassification(str, Enum):
+    PUBLIC = "public"
+    INTERNAL = "internal"
+    CONFIDENTIAL = "confidential"
+    RESTRICTED = "restricted"   # highest sensitivity — self-host tier only
+
+
+CLASSIFICATION_ORDER = [
+    DataClassification.PUBLIC,
+    DataClassification.INTERNAL,
+    DataClassification.CONFIDENTIAL,
+    DataClassification.RESTRICTED,
+]
+
+
 # --- Identity ------------------------------------------------------------------
 
 class Role(str, Enum):
@@ -32,15 +66,23 @@ class Role(str, Enum):
     APPROVER = "approver"
     AUDITOR = "auditor"
     ADMIN = "admin"
+    BPI_OVERSIGHT = "bpi_oversight"   # Phase 2: cross-entity read (BPI central office)
 
 
 class User(BaseModel):
     id: str
     name: str
     roles: list[Role]
+    entity: BPIEntity = DEFAULT_ENTITY   # tenant the user acts within
 
     def has_role(self, *roles: Role) -> bool:
         return Role.ADMIN in self.roles or any(r in self.roles for r in roles)
+
+    def can_access_entity(self, entity: BPIEntity) -> bool:
+        """Tenant isolation: own entity only, unless admin or BPI oversight."""
+        if Role.ADMIN in self.roles or Role.BPI_OVERSIGHT in self.roles:
+            return True
+        return self.entity == entity
 
 
 # --- Workflow ------------------------------------------------------------------
@@ -87,6 +129,7 @@ class CaseEvent(BaseModel):
 class Case(BaseModel):
     case_id: str
     title: str
+    entity: BPIEntity = DEFAULT_ENTITY   # tenant scope (Phase 2 FR-9 seam)
     stage: WorkflowStage = WorkflowStage.SUBMISSION
     risk_tier: RiskTier = RiskTier.MEDIUM
     history: list[CaseEvent] = []
@@ -139,6 +182,8 @@ class DocumentType(str, Enum):
 class GovernanceDocument(BaseModel):
     id: str
     case_id: str | None = None
+    entity: BPIEntity = DEFAULT_ENTITY                    # tenant scope (FR-9)
+    classification: DataClassification = DataClassification.INTERNAL  # FR-5/§11.1
     doc_type: DocumentType
     title: str
     version: int = 1
@@ -152,6 +197,7 @@ class Chunk(BaseModel):
     """Indexed fragment of a document; the unit of retrieval and grounding."""
     document_id: str
     case_id: str | None
+    entity: BPIEntity = DEFAULT_ENTITY   # tenant-scoped retrieval (FR-9)
     doc_type: str
     chunk_index: int
     content: str

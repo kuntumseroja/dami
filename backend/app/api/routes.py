@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from app.domain.models import (
     ConsistencyReport,
+    DataClassification,
     DocumentType,
     DraftRequest,
     IngestionResult,
@@ -43,15 +44,25 @@ async def create_case(
 
 
 @router.get("/cases")
-async def list_cases(c: Container = Depends(deps)):
-    return [case.model_dump(mode="json") for case in await c.repository.list_all()]
+async def list_cases(
+    user: User = Depends(get_current_user),
+    c: Container = Depends(deps),
+):
+    # Tenant isolation: a user sees only their entity's cases unless they hold
+    # cross-entity oversight (BPI central office / admin) — Phase 2 FR-9.
+    scope = None if user.has_role(Role.BPI_OVERSIGHT) else user.entity.value
+    return [case.model_dump(mode="json") for case in await c.repository.list_all(scope)]
 
 
 @router.get("/cases/{case_id}")
-async def get_case(case_id: str, c: Container = Depends(deps)):
+async def get_case(
+    case_id: str,
+    user: User = Depends(get_current_user),
+    c: Container = Depends(deps),
+):
     case = await c.repository.get(case_id)
-    if case is None:
-        raise HTTPException(404, "case not found")
+    if case is None or not user.can_access_entity(case.entity):
+        raise HTTPException(404, "case not found")  # don't leak cross-tenant existence
     return case.model_dump(mode="json")
 
 
@@ -106,6 +117,7 @@ async def ingest(
     file: UploadFile = File(...),
     doc_type: DocumentType = Form(...),
     case_id: str | None = Form(None),
+    classification: DataClassification = Form(DataClassification.INTERNAL),
     user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
     c: Container = Depends(deps),
 ):
@@ -114,6 +126,7 @@ async def ingest(
         file.filename or "upload", data, doc_type, case_id,
         embedder=c.embedder, vectors=c.vectors, storage=c.storage,
         repository=c.repository, audit=c.audit,
+        entity=user.entity, classification=classification,
     )
 
 

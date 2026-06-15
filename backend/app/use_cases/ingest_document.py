@@ -6,8 +6,16 @@ historical NOTAs.
 import io
 import uuid
 
-from app.domain.models import new_trace_id
-from app.domain.models import Chunk, DocumentType, GovernanceDocument, IngestionResult
+from app.domain.models import (
+    DEFAULT_ENTITY,
+    BPIEntity,
+    Chunk,
+    DataClassification,
+    DocumentType,
+    GovernanceDocument,
+    IngestionResult,
+    new_trace_id,
+)
 from app.domain.ports import AuditLog, CaseRepository, Embedder, ObjectStorage, VectorStore
 
 CHUNK_SIZE = 1200
@@ -52,21 +60,24 @@ async def ingest_document(
     storage: ObjectStorage,
     repository: CaseRepository,
     audit: AuditLog,
+    entity: BPIEntity = DEFAULT_ENTITY,
+    classification: DataClassification = DataClassification.INTERNAL,
 ) -> IngestionResult:
     document_id = f"doc_{uuid.uuid4().hex[:12]}"
     trace_id = new_trace_id()
 
-    # 1. Preserve the original file (evidence trail).
-    storage_key = f"cases/{case_id or 'unassigned'}/{document_id}/{filename}"
+    # 1. Preserve the original file (evidence trail), namespaced by entity.
+    storage_key = f"{entity.value}/cases/{case_id or 'unassigned'}/{document_id}/{filename}"
     storage.put(storage_key, data)
 
-    # 2. Parse and index for retrieval.
+    # 2. Parse and index for retrieval (chunks carry the tenant scope).
     content = parse_bytes(filename, data)
     pieces = chunk_text(content)
     chunks = [
         Chunk(
             document_id=document_id,
             case_id=case_id,
+            entity=entity,
             doc_type=doc_type.value,
             chunk_index=i,
             content=piece,
@@ -81,6 +92,8 @@ async def ingest_document(
         GovernanceDocument(
             id=document_id,
             case_id=case_id,
+            entity=entity,
+            classification=classification,
             doc_type=doc_type,
             title=filename,
             is_master=doc_type == DocumentType.SUBMISSION,
@@ -96,6 +109,8 @@ async def ingest_document(
             "filename": filename,
             "doc_type": doc_type.value,
             "case_id": case_id,
+            "entity": entity.value,
+            "classification": classification.value,
             "storage_key": storage_key,
             "chunks_indexed": indexed,
         },

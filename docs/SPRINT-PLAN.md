@@ -3,7 +3,7 @@
 **Aligned to:** [dam-prd.pdf](../dam-prd.pdf) (PRD v1.0, June 2026) — FR ids, acceptance criteria (AC-x.y), quality metrics, and NFRs below are the PRD's, verbatim where quantitative.
 **Horizon:** 12 weeks · 6 sprints × 2 weeks
 **Goal:** Phase 1 quick wins to pilot — minimum **30% productivity improvement** in governance document preparation (PRD §1).
-**Baseline:** Sprint 1 complete (`cf56385`) — clean architecture, Postgres/MinIO persistence, auth skeleton, token-compliant UI, CI.
+**Baseline:** Sprint 1 complete — clean architecture + the foundational seams that let **every Phase 1 (FR-1…8) and Phase 2 (FR-9, FR-10) requirement** land without rework. See the Sprint 1 section below.
 
 **Design contract:** every UI deliverable follows [docs/design/DESIGN-IBMC.md](design/DESIGN-IBMC.md) via [tokens.scss](../frontend/src/styles/tokens.scss).
 
@@ -27,6 +27,30 @@
 | Checker precision / recall | n/a | **≥90% / ≥85% overall; ≥95% on Critical types** | FR-2 |
 | Consistency check latency | n/a | **<2 min (4-artefact file)** | FR-2, NFR |
 | Routing decision latency | n/a | **<30 s** | NFR |
+
+---
+
+## Sprint 1 — Foundations for Phase 1 **and** Phase 2 ✅ complete
+
+*Scope was deliberately widened beyond "make it run": Sprint 1 also lays the cross-cutting seams that every later FR — including the Phase 2 BPI-wide platform (FR-9) and agentic governance (FR-10) — depends on. These are the things that are cheap to build into the foundation and ruinous to retrofit, so they ship first even though the features that use them come later.*
+
+| # | Story | Serves | Status |
+|---|---|---|---|
+| 1.1 | Clean architecture — `domain` (entities, ports, SOP rules) / `use_cases` / `adapters` / `infrastructure`; every external dependency behind a port with an in-memory/local twin | all FR; FR-9 modularity (PRD §10.1), FR-10 orchestrator seam | ✅ `cf56385` |
+| 1.2 | Postgres persistence — cases, documents, artefacts; restart-safe; identical suite on pgvector | all FR | ✅ |
+| 1.3 | MinIO/S3 object storage — originals preserved; **entity-namespaced keys** | FR-1/FR-3 evidence; FR-9 tenant isolation | ✅ |
+| 1.4 | AuthN/AuthZ — roles `drafter/reviewer/approver/auditor/admin` + **`bpi_oversight`**; sign-off identity from auth context; OIDC seam | FR-5 RBAC; FR-9 cross-entity oversight | ✅ |
+| 1.5 | Frontend IBM-Carbon token compliance (CI-enforced) | all UI | ✅ |
+| 1.6 | CI — ruff + dual-backend tests + frontend build + token gate | all | ✅ |
+| **1.7** | **Multi-tenancy seam (Phase 2 FR-9)** — `BPIEntity` (DAM/DIM/DSI) on `User`, `Case`, `GovernanceDocument`, `Chunk`; repositories + vector store scope by entity; routes enforce tenant isolation (own entity only, unless admin/oversight); storage keys namespaced | **FR-9** | ✅ added |
+| **1.8** | **Data classification seam (Phase 1 FR-5 / §11.1)** — `DataClassification` (public→restricted) on every document, set at intake, persisted; the value the model router's RTE-002 policy keys off to force the self-host tier | **FR-5** | ✅ added |
+| **1.9** | **Audit & rule-engine seams** — append-only audit already records `actor` (incl. `agent`/`rule_engine`) with model + identity (FR-10 agent action log seed; §11.2); SOP/threshold/model logic in config layers (`config/sop/*.yaml`, `config/models.yaml`) editable without release (PRD §10.1 configurable-not-hardcoded) | FR-4/7/8, FR-10, §10.1 | ✅ in place |
+
+**Why widen Sprint 1:** multi-tenancy and data classification are schema- and contract-level concerns. Bolting an `entity` column onto a live single-tenant system, or a classification gate onto an already-flowing pipeline, means a migration plus an audit of every query and every model call. Adding them to the foundation costs a field and a filter. Phase 1 runs single-entity DAM with these seams dormant-but-present; Phase 2 activates DIM/DSI and the BPI oversight dashboard with **no schema migration**.
+
+**Verification:** 11/11 tests green on both in-memory and Postgres backends, including tenant isolation (a DAM user cannot list, fetch, or advance a DIM case; BPI oversight sees across entities) and document classification round-trip.
+
+**Still deferred to later sprints (correctly):** the *features* that ride these seams — FR-9 shared template/SOP libraries and the BPI dashboard, FR-10 autonomous monitoring and the exception-only review interface — remain Phase 2. Sprint 1 guarantees they attach without reopening the core.
 
 ---
 

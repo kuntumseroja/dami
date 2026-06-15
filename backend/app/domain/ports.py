@@ -50,7 +50,10 @@ class VectorStore(ABC):
     @abstractmethod
     async def search(self, embedding: list[float], k: int = 8,
                      case_id: str | None = None,
-                     doc_types: list[str] | None = None) -> list[Chunk]: ...
+                     doc_types: list[str] | None = None,
+                     entity: str | None = None) -> list[Chunk]:
+        """Similarity search, optionally scoped to a case, doc types, or BPI
+        entity (tenant isolation for cross-case precedent retrieval)."""
 
 
 class AuditLog(ABC):
@@ -74,7 +77,8 @@ class CaseRepository(ABC):
     async def save(self, case: Case) -> None: ...
 
     @abstractmethod
-    async def list_all(self) -> list[Case]: ...
+    async def list_all(self, entity: str | None = None) -> list[Case]:
+        """List cases, optionally scoped to one BPI entity (tenant isolation)."""
 
     @abstractmethod
     async def save_document(self, document: GovernanceDocument) -> None: ...

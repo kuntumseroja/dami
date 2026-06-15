@@ -13,10 +13,11 @@ request bodies — this is the liability requirement.
 """
 from fastapi import Depends, HTTPException, Request
 
-from app.domain.models import Role, User
+from app.domain.models import DEFAULT_ENTITY, BPIEntity, Role, User
 from app.infrastructure.config import get_settings
 
-DEV_ADMIN = User(id="dev-admin", name="Development Admin", roles=[Role.ADMIN])
+DEV_ADMIN = User(id="dev-admin", name="Development Admin", roles=[Role.ADMIN],
+                 entity=DEFAULT_ENTITY)
 
 
 def get_current_user(request: Request) -> User:
@@ -28,6 +29,7 @@ def get_current_user(request: Request) -> User:
 
     user_id = request.headers.get("X-User-Id")
     roles_header = request.headers.get("X-User-Roles", "")
+    entity_header = request.headers.get("X-User-Entity", DEFAULT_ENTITY.value)
     if user_id:
         roles = []
         for raw in roles_header.split(","):
@@ -38,7 +40,11 @@ def get_current_user(request: Request) -> User:
                 roles.append(Role(raw))
             except ValueError as exc:
                 raise HTTPException(400, f"unknown role '{raw}'") from exc
-        return User(id=user_id, name=user_id, roles=roles)
+        try:
+            entity = BPIEntity(entity_header)
+        except ValueError as exc:
+            raise HTTPException(400, f"unknown entity '{entity_header}'") from exc
+        return User(id=user_id, name=user_id, roles=roles, entity=entity)
 
     if settings.dam_env == "development":
         return DEV_ADMIN

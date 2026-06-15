@@ -17,19 +17,21 @@ async def create_case(title: str, user: User, *,
     case = Case(
         case_id=f"case_{uuid.uuid4().hex[:10]}",
         title=title,
+        entity=user.entity,   # case is owned by the acting user's BPI entity
         history=[CaseEvent(stage="submission", note="case created", actor=user.id)],
     )
     await repository.save(case)
     audit.log("workflow.case_created", new_trace_id(),
-              {"case_id": case.case_id, "title": title, "actor": user.id})
+              {"case_id": case.case_id, "title": title, "actor": user.id,
+               "entity": case.entity.value})
     return case
 
 
 async def advance_case(case_id: str, user: User, *,
                        repository: CaseRepository, audit: AuditLog) -> Case:
     case = await repository.get(case_id)
-    if case is None:
-        raise KeyError(case_id)
+    if case is None or not user.can_access_entity(case.entity):
+        raise KeyError(case_id)  # cross-tenant looks like not-found
 
     # Sign-off identity comes from the authenticated user, never from input.
     signoff_by: str | None = None
