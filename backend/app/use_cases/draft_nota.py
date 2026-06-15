@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from app.domain.models import DraftRequest, NotaDraft, NotaSection, new_trace_id
 from app.domain.ports import AuditLog, CaseRepository, Embedder, ModelRouter, VectorStore
+from app.use_cases.grounding import enforce_grounding
 from app.use_cases.retrieval import format_context, retrieve
 
 # Default NOTA structure; Sprint 3 moves this into the template store.
@@ -40,7 +41,12 @@ governance NOTA documents.
 
 Hard rules:
 - Use ONLY facts present in the provided <source> blocks. Every paragraph must \
-be supported by at least one source; list the supporting source refs per section.
+be supported by at least one source.
+- In `source_refs`, put ONLY the exact value of the `ref` attribute of the \
+<source ref="..."> blocks you used — e.g. "doc_a1b2c3d4#0". Copy the ref \
+string verbatim. NEVER put document titles, paraphrases, entity names, or any \
+other text in source_refs; an unrecognised ref causes the section to be \
+suppressed by the traceability gate.
 - Do NOT analyse, judge, or recommend. Descriptive restatement only — analysis \
 and recommendations are reserved for human reviewers.
 - Match the formal register of Indonesian state-enterprise governance documents. \
@@ -68,7 +74,9 @@ async def draft_nota(
         system=DRAFTING_SYSTEM,
         prompt=(
             f"Sources for case {request.case_id}:\n{format_context(chunks)}\n\n"
-            f"Draft these descriptive sections:\n{headings}{extra}"
+            f"Return exactly one section object for EACH heading below, in this "
+            f"order, omitting none. Use the heading text verbatim. For each, "
+            f"cite the source refs you used (verbatim ref values):\n{headings}{extra}"
         ),
         output_type=DraftedSections,
         max_tokens=16000,
@@ -82,6 +90,14 @@ async def draft_nota(
         NotaSection(heading=h, kind="judgment", content="", sources=[])
         for h in JUDGMENT_SECTIONS
     ]
+
+    # Hard source-traceability gate (FR-1, AC-1.3): no descriptive content is
+    # rendered unless it cites a source ref that actually resolves to a chunk
+    # retrieved for this case. Hallucinated citations are stripped; ungrounded
+    # content is suppressed to a low-confidence placeholder.
+    valid_refs = {c.ref for c in chunks}
+    sections, grounding_report = enforce_grounding(sections, valid_refs)
+
     draft = NotaDraft(
         case_id=request.case_id,
         title=drafted.title,
@@ -100,6 +116,7 @@ async def draft_nota(
             "model": llm.model,
             "sources": [c.ref for c in chunks],
             "sections_drafted": [s.heading for s in drafted.sections],
+            "grounding_gate": grounding_report,   # checked / passed / suppressed / stripped_refs
         },
     )
     return draft

@@ -221,6 +221,7 @@ class NotaSection(BaseModel):
     kind: Literal["descriptive", "judgment"]
     content: str = ""           # AI fills descriptive; judgment left to humans
     sources: list[str] = []     # chunk refs grounding this section
+    grounded: bool = True       # set by the grounding gate — false = suppressed/placeholder
 
 
 class NotaDraft(BaseModel):
