@@ -5,7 +5,14 @@ the workflow engine's human checkpoints. This is the seed of the long-term
 agentic governance vision.
 """
 from app.domain.models import DraftRequest, RoutingRequest, User, new_trace_id
-from app.domain.ports import AuditLog, CaseRepository, Embedder, ModelRouter, VectorStore
+from app.domain.ports import (
+    AuditLog,
+    CaseRepository,
+    Embedder,
+    ModelRouter,
+    Reranker,
+    VectorStore,
+)
 from app.use_cases.check_consistency import check_consistency
 from app.use_cases.draft_nota import draft_nota
 from app.use_cases.extract_fields import extract_submission_fields
@@ -16,6 +23,7 @@ from app.use_cases.route_request import route_request
 async def run_case_pipeline(
     case_id: str, user: User, *, router: ModelRouter, embedder: Embedder,
     vectors: VectorStore, repository: CaseRepository, audit: AuditLog,
+    reranker: Reranker | None = None,
 ) -> dict:
     trace_id = new_trace_id()
     case = await repository.get(case_id)
@@ -24,7 +32,8 @@ async def run_case_pipeline(
 
     # 1. Extract structured facts from the ingested submission.
     fields, extraction_trace = await extract_submission_fields(
-        case_id, router=router, embedder=embedder, vectors=vectors, audit=audit)
+        case_id, router=router, embedder=embedder, vectors=vectors, audit=audit,
+        reranker=reranker)
 
     # 2. Deterministic routing → sets the case's risk tier / automation level.
     #    Use the canonical request_category enum so SOP selection is exact.
@@ -44,13 +53,13 @@ async def run_case_pipeline(
     draft = await draft_nota(
         DraftRequest(case_id=case_id),
         router=router, embedder=embedder, vectors=vectors,
-        repository=repository, audit=audit,
+        repository=repository, audit=audit, reranker=reranker,
     )
 
     # 4. Audit the document set for consistency.
     report = await check_consistency(
         case_id, router=router, embedder=embedder, vectors=vectors,
-        repository=repository, audit=audit,
+        repository=repository, audit=audit, reranker=reranker,
     )
 
     audit.log(

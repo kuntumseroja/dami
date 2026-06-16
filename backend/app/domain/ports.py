@@ -64,8 +64,23 @@ class VectorStore(ABC):
                      case_id: str | None = None,
                      doc_types: list[str] | None = None,
                      entity: str | None = None) -> list[Chunk]:
-        """Similarity search, optionally scoped to a case, doc types, or BPI
-        entity (tenant isolation for cross-case precedent retrieval)."""
+        """Dense similarity search, optionally scoped to a case, doc types, or
+        BPI entity (tenant isolation for cross-case precedent retrieval)."""
+
+    @abstractmethod
+    async def keyword_search(self, query: str, k: int = 8,
+                             case_id: str | None = None,
+                             doc_types: list[str] | None = None,
+                             entity: str | None = None) -> list[Chunk]:
+        """Lexical/full-text search — the sparse half of hybrid retrieval."""
+
+
+class Reranker(ABC):
+    """Reorders candidate chunks by relevance to the query (the rerank stage
+    after hybrid fusion). Cross-encoder or LLM in production; lexical default."""
+
+    @abstractmethod
+    async def rerank(self, query: str, chunks: list[Chunk], k: int = 8) -> list[Chunk]: ...
 
 
 class AuditLog(ABC):

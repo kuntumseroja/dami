@@ -8,7 +8,14 @@ reconciliation that consumes ~30% of senior reviewers' time.
 from pydantic import BaseModel
 
 from app.domain.models import ConsistencyFinding, ConsistencyReport, new_trace_id
-from app.domain.ports import AuditLog, CaseRepository, Embedder, ModelRouter, VectorStore
+from app.domain.ports import (
+    AuditLog,
+    CaseRepository,
+    Embedder,
+    ModelRouter,
+    Reranker,
+    VectorStore,
+)
 from app.use_cases.retrieval import format_context, retrieve
 
 
@@ -37,12 +44,13 @@ consistent, return an empty list."""
 async def check_consistency(
     case_id: str, *, router: ModelRouter, embedder: Embedder,
     vectors: VectorStore, repository: CaseRepository, audit: AuditLog,
+    reranker: Reranker | None = None,
 ) -> ConsistencyReport:
     trace_id = new_trace_id()
     llm = router.gateway("reasoning")
     chunks = await retrieve(
         "amounts dates parties terms decisions references versions",
-        embedder=embedder, vectors=vectors,
+        embedder=embedder, vectors=vectors, reranker=reranker,
         k=24, case_id=case_id,
     )
     documents = sorted({c.document_id for c in chunks})

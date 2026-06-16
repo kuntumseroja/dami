@@ -8,6 +8,7 @@ from app.adapters.audit_jsonl import JsonlAuditLog
 from app.adapters.embedder_hash import HashEmbedder
 from app.adapters.llm_claude import ClaudeGateway
 from app.adapters.model_router import ConfiguredModelRouter
+from app.adapters.reranker import LexicalReranker
 from app.adapters.repo_memory import InMemoryCaseRepository
 from app.adapters.repo_postgres import PostgresCaseRepository
 from app.adapters.storage_local import LocalStorage
@@ -20,6 +21,7 @@ from app.domain.ports import (
     LLMGateway,
     ModelRouter,
     ObjectStorage,
+    Reranker,
     VectorStore,
 )
 from app.infrastructure.config import Settings, get_settings
@@ -32,6 +34,7 @@ class Container:
     router: ModelRouter      # role-based model selection (cost-tiered mix)
     embedder: Embedder
     vectors: VectorStore
+    reranker: Reranker
     repository: CaseRepository
     storage: ObjectStorage
     audit: AuditLog
@@ -92,6 +95,7 @@ def build_container(settings: Settings | None = None) -> Container:
         router=ConfiguredModelRouter(settings.anthropic_api_key or None),
         embedder=embedder,
         vectors=vectors,
+        reranker=LexicalReranker(),
         repository=repository,
         storage=storage,
         audit=JsonlAuditLog(settings.dam_audit_log_path),

@@ -1,6 +1,6 @@
 """Extraction use case — pulls structured fields from ingested submissions."""
 from app.domain.models import SubmissionFields, new_trace_id
-from app.domain.ports import AuditLog, Embedder, ModelRouter, VectorStore
+from app.domain.ports import AuditLog, Embedder, ModelRouter, Reranker, VectorStore
 from app.use_cases.retrieval import format_context, retrieve
 
 EXTRACTION_SYSTEM = """You extract structured facts from Danantara governance \
@@ -17,13 +17,13 @@ asset_lease.)"""
 
 async def extract_submission_fields(
     case_id: str, *, router: ModelRouter, embedder: Embedder,
-    vectors: VectorStore, audit: AuditLog,
+    vectors: VectorStore, audit: AuditLog, reranker: Reranker | None = None,
 ) -> tuple[SubmissionFields, str]:
     trace_id = new_trace_id()
     llm = router.gateway("extraction")
     chunks = await retrieve(
         "request type amount counterparty requesting unit dates",
-        embedder=embedder, vectors=vectors,
+        embedder=embedder, vectors=vectors, reranker=reranker,
         k=12, case_id=case_id, doc_types=["submission"],
     )
     fields = await llm.parse(

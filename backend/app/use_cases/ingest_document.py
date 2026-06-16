@@ -17,9 +17,7 @@ from app.domain.models import (
     new_trace_id,
 )
 from app.domain.ports import AuditLog, CaseRepository, Embedder, ObjectStorage, VectorStore
-
-CHUNK_SIZE = 1200
-CHUNK_OVERLAP = 150
+from app.use_cases.chunking import semantic_chunks
 
 
 def parse_bytes(filename: str, data: bytes) -> str:
@@ -38,15 +36,8 @@ def parse_bytes(filename: str, data: bytes) -> str:
 
 
 def chunk_text(content: str) -> list[str]:
-    content = content.strip()
-    if not content:
-        return []
-    chunks, start = [], 0
-    while start < len(content):
-        end = start + CHUNK_SIZE
-        chunks.append(content[start:end])
-        start = end - CHUNK_OVERLAP
-    return chunks
+    # Structure-aware chunking (Sprint 2.2): never splits a numbered clause.
+    return semantic_chunks(content)
 
 
 async def ingest_document(

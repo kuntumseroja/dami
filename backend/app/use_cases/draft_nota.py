@@ -7,7 +7,14 @@ emitted as empty placeholders — they belong to the human reviewer by design.
 from pydantic import BaseModel
 
 from app.domain.models import DraftRequest, NotaDraft, NotaSection, new_trace_id
-from app.domain.ports import AuditLog, CaseRepository, Embedder, ModelRouter, VectorStore
+from app.domain.ports import (
+    AuditLog,
+    CaseRepository,
+    Embedder,
+    ModelRouter,
+    Reranker,
+    VectorStore,
+)
 from app.use_cases.grounding import enforce_grounding
 from app.use_cases.retrieval import format_context, retrieve
 
@@ -58,12 +65,13 @@ mohon dilengkapi]" rather than inventing content."""
 async def draft_nota(
     request: DraftRequest, *, router: ModelRouter, embedder: Embedder,
     vectors: VectorStore, repository: CaseRepository, audit: AuditLog,
+    reranker: Reranker | None = None,
 ) -> NotaDraft:
     trace_id = new_trace_id()
     llm = router.gateway("drafting")
     chunks = await retrieve(
         "submission background legal basis chronology supporting data",
-        embedder=embedder, vectors=vectors,
+        embedder=embedder, vectors=vectors, reranker=reranker,
         k=16, case_id=request.case_id,
         doc_types=["submission", "historical_nota", "template"],
     )

@@ -1,4 +1,6 @@
 """VectorStore adapter backed by Postgres + pgvector."""
+import re
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -82,18 +84,41 @@ class PgVectorStore(VectorStore):
         )
         async with self._engine.connect() as conn:
             rows = (await conn.execute(sql, params)).fetchall()
-        return [
-            Chunk(
-                document_id=r.document_id,
-                case_id=r.case_id,
-                entity=r.entity,
-                doc_type=r.doc_type,
-                chunk_index=r.chunk_index,
-                content=r.content,
-                score=float(r.score),
-            )
-            for r in rows
-        ]
+        return [self._row(r) for r in rows]
+
+    async def keyword_search(self, query: str, k: int = 8,
+                             case_id: str | None = None,
+                             doc_types: list[str] | None = None,
+                             entity: str | None = None) -> list[Chunk]:
+        # Full-text (sparse) half of hybrid retrieval. 'simple' config avoids
+        # language-specific stemming — safe for mixed Bahasa Indonesia + English.
+        if not query.strip():
+            return []
+        where = ["to_tsvector('simple', content) @@ plainto_tsquery('simple', :q)"]
+        params: dict = {"q": query, "k": k}
+        if case_id:
+            where.append("case_id = :case_id")
+            params["case_id"] = case_id
+        if doc_types:
+            where.append("doc_type = ANY(:doc_types)")
+            params["doc_types"] = doc_types
+        if entity:
+            where.append("entity = :entity")
+            params["entity"] = entity
+        sql = text(
+            "SELECT document_id, case_id, entity, doc_type, chunk_index, content, "
+            "ts_rank(to_tsvector('simple', content), plainto_tsquery('simple', :q)) AS score "
+            f"FROM doc_chunks WHERE {' AND '.join(where)} ORDER BY score DESC LIMIT :k"
+        )
+        async with self._engine.connect() as conn:
+            rows = (await conn.execute(sql, params)).fetchall()
+        return [self._row(r) for r in rows]
+
+    @staticmethod
+    def _row(r) -> Chunk:
+        return Chunk(document_id=r.document_id, case_id=r.case_id, entity=r.entity,
+                     doc_type=r.doc_type, chunk_index=r.chunk_index,
+                     content=r.content, score=float(r.score))
 
 
 class InMemoryVectorStore(VectorStore):
@@ -133,3 +158,25 @@ class InMemoryVectorStore(VectorStore):
             chunk.model_copy(update={"score": score})
             for chunk, score in candidates[:k]
         ]
+
+    async def keyword_search(self, query: str, k: int = 8,
+                             case_id: str | None = None,
+                             doc_types: list[str] | None = None,
+                             entity: str | None = None) -> list[Chunk]:
+        terms = {t for t in re.findall(r"\w+", query.lower()) if len(t) > 2}
+        if not terms:
+            return []
+        scored = []
+        for chunk, _ in self._rows:
+            if case_id is not None and chunk.case_id != case_id:
+                continue
+            if doc_types is not None and chunk.doc_type not in doc_types:
+                continue
+            if entity is not None and chunk.entity.value != entity:
+                continue
+            ctext = chunk.content.lower()
+            score = sum(ctext.count(t) for t in terms)
+            if score:
+                scored.append((chunk, float(score)))
+        scored.sort(key=lambda p: p[1], reverse=True)
+        return [c.model_copy(update={"score": s}) for c, s in scored[:k]]

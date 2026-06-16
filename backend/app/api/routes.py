@@ -172,7 +172,8 @@ async def agent_draft(
     c: Container = Depends(deps),
 ):
     return await draft_nota(request, router=c.router, embedder=c.embedder,
-                            vectors=c.vectors, repository=c.repository, audit=c.audit)
+                            vectors=c.vectors, repository=c.repository, audit=c.audit,
+                            reranker=c.reranker)
 
 
 @router.post("/agents/consistency/{case_id}", response_model=ConsistencyReport)
@@ -183,7 +184,7 @@ async def agent_consistency(
 ):
     return await check_consistency(case_id, router=c.router, embedder=c.embedder,
                                    vectors=c.vectors, repository=c.repository,
-                                   audit=c.audit)
+                                   audit=c.audit, reranker=c.reranker)
 
 
 @router.post("/agents/route", response_model=RoutingDecision)
@@ -205,7 +206,7 @@ async def agent_pipeline(
     try:
         return await run_case_pipeline(
             case_id, user, router=c.router, embedder=c.embedder, vectors=c.vectors,
-            repository=c.repository, audit=c.audit)
+            repository=c.repository, audit=c.audit, reranker=c.reranker)
     except KeyError as exc:
         raise HTTPException(404, str(exc)) from exc
 
