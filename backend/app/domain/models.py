@@ -286,6 +286,7 @@ class NotaDraft(BaseModel):
     model: str
     generated_at: datetime = Field(default_factory=utcnow)
     trace_id: str
+    latency_ms: int | None = None      # wall-clock draft time (SLA, FR-6/2.8)
 
 
 class DraftRequest(BaseModel):

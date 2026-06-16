@@ -3,9 +3,12 @@
 The rule engine decides; the model explains. The explanation is grounded in
 the fired rules and never overrides them.
 """
+from time import perf_counter
+
 from app.domain.models import RoutingDecision, RoutingRequest, new_trace_id
 from app.domain.ports import AuditLog, CaseRepository, ModelRouter
 from app.domain.rules import evaluate
+from app.domain.sla import sla_target_ms, within_sla
 
 EXPLAIN_SYSTEM = """You explain Danantara DAM routing decisions to governance \
 officers. You are given the request and the deterministic rule outcomes. \
@@ -20,6 +23,7 @@ async def route_request(
     repository: CaseRepository, audit: AuditLog,
 ) -> RoutingDecision:
     trace_id = new_trace_id()
+    started = perf_counter()
     llm = router.gateway("extraction")   # routing explanation is light — cheap tier
     outcome = evaluate(request)
 
@@ -46,6 +50,7 @@ async def route_request(
         explanation=explanation,
         trace_id=trace_id,
     )
+    latency_ms = int((perf_counter() - started) * 1000)
     await repository.save_artefact(request.case_id, "routing_decision",
                                    decision.model_dump(mode="json"))
     audit.log(
@@ -62,6 +67,9 @@ async def route_request(
                 "risk_tier": outcome["risk_tier"].value,
             },
             "model": llm.model,
+            "latency_ms": latency_ms,
+            "sla_ms": sla_target_ms("agent.routing"),
+            "within_sla": within_sla("agent.routing", latency_ms),
         },
     )
     return decision

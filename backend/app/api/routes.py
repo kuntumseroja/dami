@@ -23,6 +23,7 @@ from app.infrastructure.security import get_current_user, require_roles
 from app.use_cases import manage_case, manage_document
 from app.use_cases.check_consistency import check_consistency
 from app.use_cases.cover_checklist import build_cover_checklist
+from app.use_cases.metrics import summarize_latency
 from app.use_cases.draft_nota import draft_nota
 from app.use_cases.ingest_document import ingest_document
 from app.use_cases.route_request import route_request
@@ -286,6 +287,16 @@ async def agent_pipeline(
 
 
 # --- Audit / explainability -----------------------------------------------------------
+
+@router.get("/metrics/latency")
+async def latency_metrics(
+    limit: int = 5000,
+    user: User = Depends(get_current_user),
+    c: Container = Depends(deps),
+):
+    """Per-operation latency (p50/p95/max) + SLA breach rate from the audit trail."""
+    return summarize_latency(c.audit.read(limit))
+
 
 @router.get("/audit")
 async def audit_log(

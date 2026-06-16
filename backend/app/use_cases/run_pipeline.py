@@ -4,6 +4,8 @@ Low-risk cases flow through without pausing; medium/high-risk cases stop at
 the workflow engine's human checkpoints. This is the seed of the long-term
 agentic governance vision.
 """
+from time import perf_counter
+
 from app.domain.models import DraftRequest, RoutingRequest, User, new_trace_id
 from app.domain.ports import (
     AuditLog,
@@ -13,6 +15,7 @@ from app.domain.ports import (
     Reranker,
     VectorStore,
 )
+from app.domain.sla import sla_target_ms, within_sla
 from app.use_cases.check_consistency import check_consistency
 from app.use_cases.draft_nota import draft_nota
 from app.use_cases.extract_fields import extract_submission_fields
@@ -26,6 +29,7 @@ async def run_case_pipeline(
     reranker: Reranker | None = None,
 ) -> dict:
     trace_id = new_trace_id()
+    started = perf_counter()
     case = await repository.get(case_id)
     if case is None:
         raise KeyError(f"unknown case {case_id}")
@@ -62,6 +66,7 @@ async def run_case_pipeline(
         repository=repository, audit=audit, reranker=reranker,
     )
 
+    latency_ms = int((perf_counter() - started) * 1000)
     audit.log(
         "orchestrator.pipeline_completed",
         trace_id,
@@ -72,6 +77,9 @@ async def run_case_pipeline(
             "child_traces": [extraction_trace, routing.trace_id,
                              draft.trace_id, report.trace_id],
             "findings": len(report.findings),
+            "latency_ms": latency_ms,
+            "sla_ms": sla_target_ms("orchestrator.pipeline_completed"),
+            "within_sla": within_sla("orchestrator.pipeline_completed", latency_ms),
         },
     )
     return {

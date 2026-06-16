@@ -1,6 +1,9 @@
 """Extraction use case — pulls structured fields from ingested submissions."""
+from time import perf_counter
+
 from app.domain.models import SubmissionFields, new_trace_id
 from app.domain.ports import AuditLog, Embedder, ModelRouter, Reranker, VectorStore
+from app.domain.sla import sla_target_ms, within_sla
 from app.use_cases.retrieval import format_context, retrieve
 
 EXTRACTION_SYSTEM = """You extract structured facts from Danantara governance \
@@ -27,6 +30,7 @@ async def extract_submission_fields(
     vectors: VectorStore, audit: AuditLog, reranker: Reranker | None = None,
 ) -> tuple[SubmissionFields, str]:
     trace_id = new_trace_id()
+    started = perf_counter()
     llm = router.gateway("extraction")
     chunks = await retrieve(
         "request type amount counterparty requesting unit dates",
@@ -39,6 +43,7 @@ async def extract_submission_fields(
         output_type=SubmissionFields,
         max_tokens=4096,
     )
+    latency_ms = int((perf_counter() - started) * 1000)
     audit.log(
         "agent.extraction",
         trace_id,
@@ -47,6 +52,9 @@ async def extract_submission_fields(
             "model": llm.model,
             "sources": [c.ref for c in chunks],
             "output": fields.model_dump(),
+            "latency_ms": latency_ms,
+            "sla_ms": sla_target_ms("agent.extraction"),
+            "within_sla": within_sla("agent.extraction", latency_ms),
         },
     )
     return fields, trace_id

@@ -5,9 +5,12 @@ vs communication) against the master submission and flags inconsistencies,
 outdated references, and missing updates — replacing the manual
 reconciliation that consumes ~30% of senior reviewers' time.
 """
+from time import perf_counter
+
 from pydantic import BaseModel
 
 from app.domain.models import ConsistencyFinding, ConsistencyReport, new_trace_id
+from app.domain.sla import sla_target_ms, within_sla
 from app.domain.ports import (
     AuditLog,
     CaseRepository,
@@ -47,6 +50,7 @@ async def check_consistency(
     reranker: Reranker | None = None,
 ) -> ConsistencyReport:
     trace_id = new_trace_id()
+    started = perf_counter()
     llm = router.gateway("reasoning")
     chunks = await retrieve(
         "amounts dates parties terms decisions references versions",
@@ -73,6 +77,7 @@ async def check_consistency(
         trace_id=trace_id,
     )
 
+    latency_ms = int((perf_counter() - started) * 1000)
     await repository.save_artefact(case_id, "consistency_report",
                                    report.model_dump(mode="json"))
     audit.log(
@@ -84,6 +89,9 @@ async def check_consistency(
             "documents_compared": documents,
             "findings_count": len(result.findings),
             "findings": [f.model_dump() for f in result.findings],
+            "latency_ms": latency_ms,
+            "sla_ms": sla_target_ms("agent.consistency"),
+            "within_sla": within_sla("agent.consistency", latency_ms),
         },
     )
     return report

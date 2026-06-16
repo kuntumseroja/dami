@@ -22,6 +22,8 @@ import {
 } from '@carbon/icons-react';
 import { api } from '../api';
 
+const DRAFT_SLA_MS = 60_000;   // mirrors backend SLA_TARGETS_MS["agent.drafting"]
+
 const STAGE_LABELS = {
   submission_intake: 'Submission Intake', eligibility_check: 'Eligibility Check',
   nota_drafting: 'NOTA Drafting', internal_review: 'Internal Review',
@@ -286,8 +288,15 @@ export default function Drafting() {
       {draft && (
         <div className="dam-card dam-card--accent">
           <h2 style={{ fontWeight: 300, marginTop: 0 }}>{draft.title}</h2>
-          <p className="dam-meta">
-            Model: <code>{draft.model}</code> · Trace: <code>{draft.trace_id}</code>
+          <p className="dam-meta" style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
+            <span>Model: <code>{draft.model}</code></span>
+            <span>Trace: <code>{draft.trace_id}</code></span>
+            {draft.latency_ms != null && (
+              <span className={`dam-pill dam-pill--${draft.latency_ms <= DRAFT_SLA_MS ? 'success' : 'warning'} dam-pill--plain`}>
+                {(draft.latency_ms / 1000).toFixed(1)}s
+                {draft.latency_ms <= DRAFT_SLA_MS ? ' · within SLA' : ' · over SLA'}
+              </span>
+            )}
           </p>
           {draft.sections.map((s) => (
             <div key={s.heading} style={{ marginBottom: '1.5rem' }}>

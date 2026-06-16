@@ -4,9 +4,12 @@ Generates the *descriptive* 80% of a NOTA from submission documents,
 templates, and historical notes retrieved via RAG. Judgment sections are
 emitted as empty placeholders — they belong to the human reviewer by design.
 """
+from time import perf_counter
+
 from pydantic import BaseModel
 
 from app.domain.models import DraftRequest, NotaDraft, NotaSection, new_trace_id
+from app.domain.sla import sla_target_ms, within_sla
 from app.domain.ports import (
     AuditLog,
     CaseRepository,
@@ -68,6 +71,7 @@ async def draft_nota(
     reranker: Reranker | None = None,
 ) -> NotaDraft:
     trace_id = new_trace_id()
+    started = perf_counter()
     llm = router.gateway("drafting")
     chunks = await retrieve(
         "submission background legal basis chronology supporting data",
@@ -106,12 +110,14 @@ async def draft_nota(
     valid_refs = {c.ref for c in chunks}
     sections, grounding_report = enforce_grounding(sections, valid_refs)
 
+    latency_ms = int((perf_counter() - started) * 1000)
     draft = NotaDraft(
         case_id=request.case_id,
         title=drafted.title,
         sections=sections,
         model=llm.model,
         trace_id=trace_id,
+        latency_ms=latency_ms,
     )
 
     await repository.save_artefact(request.case_id, "nota_draft",
@@ -125,6 +131,9 @@ async def draft_nota(
             "sources": [c.ref for c in chunks],
             "sections_drafted": [s.heading for s in drafted.sections],
             "grounding_gate": grounding_report,   # checked / passed / suppressed / stripped_refs
+            "latency_ms": latency_ms,
+            "sla_ms": sla_target_ms("agent.drafting"),
+            "within_sla": within_sla("agent.drafting", latency_ms),
         },
     )
     return draft
