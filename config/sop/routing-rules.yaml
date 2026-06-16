@@ -24,9 +24,9 @@ sops:
     applies_when:
       request_type: debt_issuance
   - id: SOP-DAM-005
-    name: Merger, Acquisition & Corporate Restructuring
+    name: Merger, Acquisition, Spin-off & Corporate Restructuring
     applies_when:
-      request_type: merger_acquisition
+      request_type: [merger_acquisition, spin_off]
   - id: SOP-DAM-006
     name: Capital Expenditure / Project Investment
     applies_when:
@@ -35,6 +35,14 @@ sops:
     name: Asset Write-off / Impaired Asset Disposal
     applies_when:
       request_type: asset_writeoff
+  - id: SOP-DAM-008
+    name: Equity Capital Markets (IPO & Rights Issue)
+    applies_when:
+      request_type: [ipo, rights_issue]
+  - id: SOP-DAM-009
+    name: Corporate Dissolution & Liquidation
+    applies_when:
+      request_type: dissolution
   - id: SOP-DAM-999
     name: General Governance Request (fallback)
     applies_when: {}

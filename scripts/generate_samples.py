@@ -1,10 +1,12 @@
 """Generate realistic SOE corporate-action submission packages (NOTA inputs).
 
-Produces PDFs and DOCX into ../samples/ — seven cases spanning the
-delegation-of-authority tiers and corporate-action types (disposal, lease,
-investment, debt issuance, M&A, capex/PSN, write-off), in Bahasa Indonesia
-(with English glosses), using real Indonesian SOE names and plausible
-figures. Two deliberate defects are planted for the demo:
+Produces PDFs and DOCX into ../samples/ — thirteen cases spanning the
+delegation-of-authority tiers and the full corporate-action spectrum
+(disposal, lease, investment, debt issuance, M&A, capex/PSN, write-off,
+bank merger, controlling-stake acquisition, rights issue, spin-off, IPO,
+dissolution), in Bahasa Indonesia (with English glosses), using real
+Indonesian SOE names and plausible figures. Two deliberate defects are
+planted for the demo:
   * a "13% vs 130%" arithmetic error in Case A's valuation annex
     (for the financial reconciliation agent),
   * a date/amount mismatch between Case A's submission and its draft board
@@ -313,13 +315,138 @@ def case_g():
     )
 
 
+# ── Case H — Bank merger / consolidation (President tier, systemic) ───────────
+def case_h():
+    pdf(
+        "H1_surat_permohonan_merger.pdf",
+        "SURAT PERMOHONAN PERSETUJUAN MERGER (KONSOLIDASI)",
+        "Request for Approval of Merger · Konsolidasi Bank Syariah BUMN",
+        [
+            "Nomor: 003/DANA/MRG/VI/2026 &nbsp;&nbsp; Tanggal: 8 Juni 2026",
+            "<b>Perihal:</b> Permohonan persetujuan penggabungan (merger) tiga bank syariah "
+            "milik negara — PT Bank BRI Syariah Tbk, PT Bank Syariah Mandiri, dan "
+            "PT Bank BNI Syariah — menjadi satu entitas, PT Bank Syariah Indonesia Tbk (BSI).",
+            "<b>Nilai aset gabungan / Combined assets:</b> " + money(240_000_000_000_000) +
+            " (dua ratus empat puluh triliun Rupiah).",
+            "<b>Struktur:</b> Bank Syariah Mandiri sebagai entitas yang menerima penggabungan; "
+            "BRI Syariah dan BNI Syariah membubarkan diri tanpa likuidasi.",
+            "<b>Dasar strategis:</b> Membentuk bank syariah berskala besar yang kompetitif "
+            "secara global. Berdampak sistemik pada sektor keuangan — memerlukan persetujuan "
+            "Presiden Republik Indonesia serta koordinasi OJK.",
+            "Hormat kami, Komite Konsolidasi Perbankan Syariah BUMN.",
+        ],
+    )
+
+
+# ── Case I — Controlling-stake acquisition Freeport (President tier) ──────────
+def case_i():
+    pdf(
+        "I1_surat_permohonan_akuisisi_freeport.pdf",
+        "SURAT PERMOHONAN PERSETUJUAN AKUISISI SAHAM PENGENDALI",
+        "Request for Approval of Controlling-Stake Acquisition · MIND ID — PT Freeport Indonesia",
+        [
+            "Nomor: 071/MINDID/MNA/VI/2026 &nbsp;&nbsp; Tanggal: 4 Juni 2026",
+            "<b>Perihal:</b> Permohonan persetujuan akuisisi saham untuk meningkatkan "
+            "kepemilikan Pemerintah menjadi 51% (pengendali) pada PT Freeport Indonesia.",
+            "<b>Nilai transaksi / Deal value:</b> " + money(56_000_000_000_000) +
+            " (setara USD 3,85 miliar).",
+            "<b>Struktur:</b> Pembelian saham divestasi dari Freeport-McMoRan; mengalihkan "
+            "pengendalian tambang Grasberg kepada negara.",
+            "<b>Dasar strategis:</b> Penguasaan sumber daya mineral strategis nasional. "
+            "Mengubah kepemilikan mayoritas negara — memerlukan persetujuan "
+            "Presiden Republik Indonesia.",
+            "Hormat kami, Direksi PT Mineral Industri Indonesia (MIND ID).",
+        ],
+    )
+
+
+# ── Case J — Rights issue to fund an acquisition (Dewan Pengawas tier) ────────
+def case_j():
+    pdf(
+        "J1_surat_permohonan_rights_issue.pdf",
+        "SURAT PERMOHONAN PERSETUJUAN PENERBITAN SAHAM TERBATAS (RIGHTS ISSUE)",
+        "Request for Approval of Rights Issue (HMETD) · PT Semen Indonesia (Persero) Tbk",
+        [
+            "Nomor: 145/SIG/HMETD/VI/2026 &nbsp;&nbsp; Tanggal: 6 Juni 2026",
+            "<b>Perihal:</b> Permohonan persetujuan penerbitan saham dengan Hak Memesan Efek "
+            "Terlebih Dahulu (rights issue) untuk mendanai akuisisi PT Semen Baturaja Tbk.",
+            "<b>Nilai penerbitan / Issuance size:</b> " + money(3_800_000_000_000) +
+            " (tiga triliun delapan ratus miliar Rupiah).",
+            "<b>Tujuan penggunaan dana:</b> Akuisisi pengendalian PT Semen Baturaja Tbk guna "
+            "sinergi rantai pasok dan operasional pada klaster semen.",
+            "<b>Dampak:</b> Dilusi terkendali; negara mempertahankan kepemilikan mayoritas. "
+            "Aksi pasar modal strategis — memerlukan persetujuan Dewan Pengawas dan OJK.",
+            "Hormat kami, Direksi PT Semen Indonesia (Persero) Tbk.",
+        ],
+    )
+
+
+# ── Case K — Spin-off of a business unit (Dewan Pengawas tier) ────────────────
+def case_k():
+    pdf(
+        "K1_surat_permohonan_spinoff.pdf",
+        "SURAT PERMOHONAN PERSETUJUAN PEMISAHAN UNIT USAHA (SPIN-OFF)",
+        "Request for Approval of Business Spin-off · PT Telkom Indonesia (Persero) Tbk",
+        [
+            "Nomor: 222/TLKM/SPO/VI/2026 &nbsp;&nbsp; Tanggal: 3 Juni 2026",
+            "<b>Perihal:</b> Permohonan persetujuan pemisahan (spin-off) lini bisnis pusat data "
+            "(data center) menjadi entitas anak tersendiri, PT Sigma Cipta Caraka (Telkomsigma).",
+            "<b>Nilai aset yang dipisahkan / Carve-out asset value:</b> " +
+            money(4_500_000_000_000) + " (empat triliun lima ratus miliar Rupiah).",
+            "<b>Dasar strategis:</b> Membuka nilai bisnis khusus (unlock specialized value), "
+            "menarik mitra strategis, dan mempercepat ekspansi infrastruktur pusat data.",
+            "<b>Dampak:</b> Restrukturisasi korporasi — memerlukan persetujuan Dewan Pengawas.",
+            "Hormat kami, Direksi PT Telkom Indonesia (Persero) Tbk.",
+        ],
+    )
+
+
+# ── Case L — IPO on the IDX (President tier, large raise) ─────────────────────
+def case_l():
+    pdf(
+        "L1_surat_permohonan_ipo.pdf",
+        "SURAT PERMOHONAN PERSETUJUAN PENAWARAN UMUM PERDANA (IPO)",
+        "Request for Approval of Initial Public Offering · PT Pertamina Geothermal Energy Tbk",
+        [
+            "Nomor: 058/PGE/IPO/VI/2026 &nbsp;&nbsp; Tanggal: 2 Juni 2026",
+            "<b>Perihal:</b> Permohonan persetujuan Penawaran Umum Perdana (IPO) saham pada "
+            "Bursa Efek Indonesia (IDX) untuk pendanaan ekspansi infrastruktur energi hijau.",
+            "<b>Target dana / Proceeds target:</b> " + money(9_000_000_000_000) +
+            " (sembilan triliun Rupiah).",
+            "<b>Struktur:</b> Pelepasan saham minoritas ke publik; negara/holding tetap "
+            "pengendali mayoritas. Pencatatan saham di IDX.",
+            "<b>Dasar strategis:</b> Pendanaan pengembangan panas bumi (geothermal) untuk "
+            "transisi energi. Aksi pasar modal berskala besar — memerlukan persetujuan "
+            "Presiden Republik Indonesia dan OJK.",
+            "Hormat kami, Direksi PT Pertamina Geothermal Energy Tbk.",
+        ],
+    )
+
+
+# ── Case M — Dissolution / liquidation (Dewan Pengawas tier) ──────────────────
+def case_m():
+    pdf(
+        "M1_surat_permohonan_pembubaran.pdf",
+        "SURAT PERMOHONAN PERSETUJUAN PEMBUBARAN (LIKUIDASI)",
+        "Request for Approval of Dissolution / Liquidation · PT Merpati Nusantara Airlines (Persero)",
+        [
+            "Nomor: 011/MNA/LIK/VI/2026 &nbsp;&nbsp; Tanggal: 9 Juni 2026",
+            "<b>Perihal:</b> Permohonan persetujuan pembubaran dan likuidasi perseroan yang "
+            "telah lama tidak beroperasi (non-performing) guna membersihkan portofolio negara.",
+            "<b>Nilai penyelesaian kewajiban / Settlement value:</b> " +
+            money(1_200_000_000_000) + " (satu triliun dua ratus miliar Rupiah).",
+            "<b>Tindak lanjut:</b> Penunjukan tim likuidasi, penyelesaian kewajiban kepada "
+            "kreditur dan eks-karyawan, serta penjualan aset tersisa.",
+            "<b>Dasar:</b> Pembubaran entitas BUMN — memerlukan persetujuan Dewan Pengawas "
+            "dan koordinasi dengan Kementerian Keuangan.",
+            "Hormat kami, Tim Restrukturisasi Portofolio BUMN.",
+        ],
+    )
+
+
 if __name__ == "__main__":
     print("Generating sample SOE corporate-action packages into", OUT)
-    case_a()
-    case_b()
-    case_c()
-    case_d()
-    case_e()
-    case_f()
-    case_g()
+    for fn in (case_a, case_b, case_c, case_d, case_e, case_f, case_g,
+               case_h, case_i, case_j, case_k, case_l, case_m):
+        fn()
     print("Done. Seed them with: backend/.venv/bin/python scripts/seed.py")

@@ -21,9 +21,13 @@ const REQUEST_TYPES = [
   ['asset_acquisition', 'Asset acquisition'],
   ['investment', 'Investment'],
   ['debt_issuance', 'Debt issuance (bonds / sukuk)'],
-  ['merger_acquisition', 'Merger & acquisition'],
+  ['merger_acquisition', 'Merger / acquisition / consolidation'],
   ['capital_expenditure', 'Capital expenditure / project'],
   ['asset_writeoff', 'Asset write-off'],
+  ['rights_issue', 'Rights issue (HMETD)'],
+  ['ipo', 'Initial public offering (IPO)'],
+  ['spin_off', 'Spin-off / carve-out'],
+  ['dissolution', 'Dissolution / liquidation'],
   ['other', 'Other'],
 ];
 

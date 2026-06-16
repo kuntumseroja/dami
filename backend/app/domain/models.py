@@ -250,7 +250,8 @@ class SubmissionFields(BaseModel):
         "asset_disposal", "asset_acquisition", "investment",
         "asset_lease", "asset_utilization",
         "debt_issuance", "merger_acquisition", "capital_expenditure",
-        "asset_writeoff", "other",
+        "asset_writeoff", "rights_issue", "ipo", "spin_off",
+        "dissolution", "other",
     ] = "other"
     amount_idr: float | None
     counterparty: str | None

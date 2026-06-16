@@ -1,12 +1,14 @@
 """Seed the running DAM platform with realistic demo cases + documents.
 
-Creates seven SOE corporate-action cases and ingests their submission
+Creates thirteen SOE corporate-action cases and ingests their submission
 packages (the PDFs/DOCX from generate_samples.py) through the live API, so
-the app has reality-shaped data to demo across the delegation-of-authority
-tiers and action types: asset disposal (with a planted valuation error),
-low-risk lease (automated), equity investment, global bond issuance, M&A
-controlling-stake acquisition, refinery capex / PSN (President tier), and an
-asset write-off.
+the app has reality-shaped data to demo across every delegation tier and the
+full spectrum of corporate actions: asset disposal (with a planted valuation
+error), low-risk lease (automated), equity investment, global bond issuance,
+M&A acquisition, refinery capex / PSN, asset write-off, bank merger /
+consolidation (BSI), controlling-stake acquisition (Freeport), rights issue
+(SIG), spin-off (Telkomsigma), IPO (Pertamina Geothermal), and dissolution
+(Merpati) — mirroring real Indonesian SOE transactions.
 
 Prereqs:
   1. backend/.venv/bin/python scripts/generate_samples.py   (makes samples/)
@@ -75,6 +77,36 @@ CASES = [
         "title": "Penghapusan aset kapal tua — Pelni (asset write-off)",
         "classification": "internal",
         "docs": [("G1_surat_permohonan_penghapusan.pdf", "submission")],
+    },
+    {
+        "title": "Merger bank syariah BUMN → BSI — konsolidasi (merger)",
+        "classification": "restricted",
+        "docs": [("H1_surat_permohonan_merger.pdf", "submission")],
+    },
+    {
+        "title": "Akuisisi saham pengendali Freeport — MIND ID (acquisition)",
+        "classification": "restricted",
+        "docs": [("I1_surat_permohonan_akuisisi_freeport.pdf", "submission")],
+    },
+    {
+        "title": "Rights issue akuisisi Semen Baturaja — SIG (rights issue)",
+        "classification": "confidential",
+        "docs": [("J1_surat_permohonan_rights_issue.pdf", "submission")],
+    },
+    {
+        "title": "Spin-off pusat data Telkomsigma — Telkom (spin-off)",
+        "classification": "confidential",
+        "docs": [("K1_surat_permohonan_spinoff.pdf", "submission")],
+    },
+    {
+        "title": "IPO panas bumi di BEI — Pertamina Geothermal (IPO)",
+        "classification": "confidential",
+        "docs": [("L1_surat_permohonan_ipo.pdf", "submission")],
+    },
+    {
+        "title": "Pembubaran perseroan non-operasi — Merpati (dissolution)",
+        "classification": "restricted",
+        "docs": [("M1_surat_permohonan_pembubaran.pdf", "submission")],
     },
 ]
 

@@ -10,13 +10,16 @@ both expected.
 
 Also classify the request into `request_category` — one of asset_disposal, \
 asset_acquisition, investment, asset_lease, asset_utilization, debt_issuance, \
-merger_acquisition, capital_expenditure, asset_writeoff, or other — so the \
-routing rule engine can select the correct SOP. Examples: "divestasi"/sale = \
-asset_disposal; "penyertaan modal"/equity = investment; "sewa"/lease = \
-asset_lease; "penerbitan obligasi"/bond/sukuk/global notes = debt_issuance; \
-"merger"/"akuisisi saham pengendali"/M&A = merger_acquisition; "belanja \
-modal"/CAPEX/project investment = capital_expenditure; "penghapusan \
-aset"/write-off of impaired assets = asset_writeoff."""
+merger_acquisition, capital_expenditure, asset_writeoff, rights_issue, ipo, \
+spin_off, dissolution, or other — so the routing rule engine can select the \
+correct SOP. Examples: "divestasi"/sale = asset_disposal; "penyertaan \
+modal"/equity = investment; "sewa"/lease = asset_lease; "penerbitan \
+obligasi"/bond/sukuk/global notes = debt_issuance; "merger"/"konsolidasi"/\
+"akuisisi saham pengendali"/M&A = merger_acquisition; "belanja modal"/CAPEX = \
+capital_expenditure; "penghapusan aset"/write-off = asset_writeoff; "rights \
+issue"/"penerbitan saham terbatas (HMETD)" = rights_issue; "penawaran umum \
+perdana"/IPO/go public = ipo; "spin-off"/"pemisahan unit usaha"/carve-out = \
+spin_off; "pembubaran"/"likuidasi"/dissolution = dissolution."""
 
 
 async def extract_submission_fields(
