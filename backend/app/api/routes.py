@@ -20,6 +20,7 @@ from app.infrastructure.container import Container, get_container
 from app.infrastructure.security import get_current_user, require_roles
 from app.use_cases import manage_case, manage_document
 from app.use_cases.check_consistency import check_consistency
+from app.use_cases.cover_checklist import build_cover_checklist
 from app.use_cases.draft_nota import draft_nota
 from app.use_cases.ingest_document import ingest_document
 from app.use_cases.route_request import route_request
@@ -104,6 +105,13 @@ async def set_risk_tier(
 @router.get("/cases/{case_id}/documents")
 async def list_documents(case_id: str, c: Container = Depends(deps)):
     return [d.model_dump(mode="json") for d in await c.repository.list_documents(case_id)]
+
+
+@router.get("/cases/{case_id}/checklist")
+async def cover_checklist(case_id: str, c: Container = Depends(deps)):
+    """Completeness checklist derived from the documents actually attached."""
+    report = await build_cover_checklist(case_id, repository=c.repository)
+    return report.model_dump(mode="json")
 
 
 _MEDIA_TYPES = {

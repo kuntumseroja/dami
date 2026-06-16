@@ -13,6 +13,7 @@ export const api = {
   listCases: () => fetch('/api/cases').then(json),
   getCase: (caseId) => fetch(`/api/cases/${caseId}`).then(json),
   listDocuments: (caseId) => fetch(`/api/cases/${caseId}/documents`).then(json),
+  checklist: (caseId) => fetch(`/api/cases/${caseId}/checklist`).then(json),
   documentFileUrl: (docId) => `/api/documents/${docId}/file`,
   deleteDocument: (caseId, docId) =>
     fetch(`/api/cases/${caseId}/documents/${docId}`, { method: 'DELETE' }).then(json),

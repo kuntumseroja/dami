@@ -16,6 +16,9 @@ import {
   ViewOff,
   TrashCan,
   Locked,
+  CheckmarkFilled,
+  WarningAltFilled,
+  Subtract,
 } from '@carbon/icons-react';
 import { api } from '../api';
 
@@ -34,6 +37,7 @@ export default function Drafting() {
   const [caseId, setCaseId] = useState(routeCaseId || '');
   const [caseInfo, setCaseInfo] = useState(null);
   const [docs, setDocs] = useState([]);
+  const [checklist, setChecklist] = useState(null);
   const [instructions, setInstructions] = useState('');
   const [draft, setDraft] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -41,12 +45,19 @@ export default function Drafting() {
   const [error, setError] = useState(null);
   const [previewId, setPreviewId] = useState(null);
 
+  // Refresh the document list + the auto-reconciled completeness checklist.
+  const refreshDocs = (id = caseId) => {
+    if (!id) return;
+    api.listDocuments(id).then(setDocs).catch(() => setDocs([]));
+    api.checklist(id).then(setChecklist).catch(() => setChecklist(null));
+  };
+
   // When opened from an active process, load the case + its already-attached
   // submission documents from the SOE.
   const loadCase = (id) => {
     if (!id) return;
     api.getCase(id).then(setCaseInfo).catch(() => setCaseInfo(null));
-    api.listDocuments(id).then(setDocs).catch(() => setDocs([]));
+    refreshDocs(id);
   };
   useEffect(() => {
     if (routeCaseId) { setCaseId(routeCaseId); loadCase(routeCaseId); }
@@ -60,7 +71,7 @@ export default function Drafting() {
     setError(null);
     try {
       for (const f of files) await api.ingest(f, 'supporting', caseId);
-      api.listDocuments(caseId).then(setDocs).catch(() => {});
+      refreshDocs(caseId);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -74,7 +85,7 @@ export default function Drafting() {
     try {
       await api.deleteDocument(caseId, doc.id);
       if (previewId === doc.id) setPreviewId(null);
-      api.listDocuments(caseId).then(setDocs).catch(() => {});
+      refreshDocs(caseId);
     } catch (e) {
       setError(e.message);
     }
@@ -123,6 +134,34 @@ export default function Drafting() {
           <span className="dam-pill dam-pill--info dam-pill--plain">
             {docs.length} document{docs.length === 1 ? '' : 's'} attached
           </span>
+        </div>
+      )}
+
+      {/* Auto-reconciled completeness checklist — reflects the docs actually
+          attached, not a static field on the cover sheet. */}
+      {checklist && (
+        <div className="dam-card">
+          <h3 className="dam-subhead" style={{ marginTop: 0 }}>
+            Completeness checklist
+            <span className={`dam-pill dam-pill--${checklist.complete ? 'success' : 'warning'}`}>
+              {checklist.complete ? 'Complete' : `${checklist.missing.length} missing`}
+            </span>
+          </h3>
+          {checklist.items.map((it) => {
+            const state = it.present ? 'ok' : it.required ? 'missing' : 'optional';
+            const Icon = state === 'ok' ? CheckmarkFilled
+              : state === 'missing' ? WarningAltFilled : Subtract;
+            return (
+              <div className={`dam-check dam-check--${state}`} key={it.key}>
+                <Icon size={18} className="dam-check__icon" />
+                <span className="dam-check__label">{it.label}</span>
+                {!it.required && <span className="dam-check__opt">recommended</span>}
+                <span className="dam-check__status">
+                  {it.present ? (it.matched[0] || 'present') : it.required ? 'Required — missing' : 'Not provided'}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
 

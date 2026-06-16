@@ -368,6 +368,32 @@ code, pre {
   gap: var(--sp-2);
 }
 
+/* -- Completeness checklist rows ----------------------------------------- */
+.dam-check {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--ibm-border);
+}
+.dam-check:last-child { border-bottom: 0; }
+.dam-check__icon { flex-shrink: 0; }
+.dam-check--ok .dam-check__icon { color: var(--ibm-success); }
+.dam-check--missing .dam-check__icon { color: var(--ibm-warning); }
+.dam-check--optional .dam-check__icon { color: var(--ibm-text-disabled); }
+.dam-check__label { font: var(--type-body); font-size: 14px; }
+.dam-check__opt { color: var(--ibm-text-muted); font: var(--type-label); }
+.dam-check__status {
+  margin-left: auto;
+  color: var(--ibm-text-muted);
+  font: var(--type-label);
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dam-check--missing .dam-check__status { color: var(--ibm-warning); }
+
 /* -- Shared agent-page elements (unchanged semantics) -------------------- */
 .dam-section-judgment {
   background: var(--dam-blue-10);
