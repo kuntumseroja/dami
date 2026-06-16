@@ -15,6 +15,16 @@ export const api = {
   listDocuments: (caseId) => fetch(`/api/cases/${caseId}/documents`).then(json),
   checklist: (caseId) => fetch(`/api/cases/${caseId}/checklist`).then(json),
   documentFileUrl: (docId) => `/api/documents/${docId}/file`,
+  docVersions: (caseId, docId) =>
+    fetch(`/api/cases/${caseId}/documents/${docId}/versions`).then(json),
+  docCheckout: (caseId, docId) =>
+    fetch(`/api/cases/${caseId}/documents/${docId}/checkout`, { method: 'POST' }).then(json),
+  docCheckin: (caseId, docId, content, changeSummary) =>
+    fetch(`/api/cases/${caseId}/documents/${docId}/checkin`, {
+      method: 'POST', body: form({ content, change_summary: changeSummary || '' }),
+    }).then(json),
+  docDiff: (caseId, docId, a, b) =>
+    fetch(`/api/cases/${caseId}/documents/${docId}/diff?a=${a}&b=${b}`).then(json),
   deleteDocument: (caseId, docId) =>
     fetch(`/api/cases/${caseId}/documents/${docId}`, { method: 'DELETE' }).then(json),
   createCase: (title) => fetch('/api/cases', { method: 'POST', body: form({ title }) }).then(json),

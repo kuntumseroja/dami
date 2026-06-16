@@ -25,6 +25,7 @@ import {
   Checkmark,
   Close,
   Download,
+  Catalog,
 } from '@carbon/icons-react';
 import { api } from '../api';
 
@@ -54,6 +55,11 @@ export default function Drafting() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [previewId, setPreviewId] = useState(null);
+  const [historyId, setHistoryId] = useState(null);     // doc id whose history is open
+  const [history, setHistory] = useState(null);         // {versions, locked_by, immutable, propagation}
+  const [checkinText, setCheckinText] = useState('');
+  const [checkinSummary, setCheckinSummary] = useState('');
+  const [diff, setDiff] = useState('');
   const [templates, setTemplates] = useState([]);
   const [templateId, setTemplateId] = useState('');   // '' = auto (by SOP)
   const [actions, setActions] = useState({});          // paragraph_id -> action record
@@ -113,6 +119,34 @@ export default function Drafting() {
     } catch (e) {
       setError(e.message);
     }
+  };
+
+  // --- 3.8 document version control --------------------------------------
+  const loadHistory = (docId) =>
+    api.docVersions(caseId, docId).then(setHistory).catch(() => setHistory(null));
+
+  const toggleHistory = (docId) => {
+    setDiff('');
+    if (historyId === docId) { setHistoryId(null); return; }
+    setHistoryId(docId); setHistory(null); loadHistory(docId);
+  };
+
+  const checkout = async (docId) => {
+    try { await api.docCheckout(caseId, docId); loadHistory(docId); }
+    catch (e) { setError(e.message); }
+  };
+
+  const checkin = async (docId) => {
+    if (!checkinText.trim()) { setError('Check-in needs content.'); return; }
+    try {
+      await api.docCheckin(caseId, docId, checkinText, checkinSummary);
+      setCheckinText(''); setCheckinSummary(''); loadHistory(docId);
+    } catch (e) { setError(e.message); }
+  };
+
+  const showDiff = async (docId, a, b) => {
+    try { setDiff((await api.docDiff(caseId, docId, a, b)).diff || '(no differences)'); }
+    catch (e) { setError(e.message); }
   };
 
   const generate = async () => {
@@ -241,6 +275,15 @@ export default function Drafting() {
                       renderIcon={previewId === d.id ? ViewOff : View}
                       onClick={() => setPreviewId(previewId === d.id ? null : d.id)}
                     />
+                    <Button
+                      kind="ghost"
+                      size="sm"
+                      hasIconOnly
+                      iconDescription={historyId === d.id ? 'Hide history' : 'Version history'}
+                      tooltipPosition="bottom"
+                      renderIcon={Catalog}
+                      onClick={() => toggleHistory(d.id)}
+                    />
                     {d.is_master ? (
                       <Button
                         kind="ghost"
@@ -270,6 +313,50 @@ export default function Drafting() {
                     src={api.documentFileUrl(d.id)}
                     className="dam-doc-preview"
                   />
+                )}
+                {historyId === d.id && history && (
+                  <div className="dam-card" style={{ margin: 'var(--sp-2) 0', boxShadow: 'none', background: 'var(--bg-page)' }}>
+                    <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center', flexWrap: 'wrap', marginBottom: 'var(--sp-2)' }}>
+                      <strong>Version history</strong>
+                      {history.immutable && <span className="dam-pill dam-pill--neutral dam-pill--plain">frozen — submitted to review</span>}
+                      {history.locked_by && <span className="dam-pill dam-pill--warning dam-pill--plain">checked out by {history.locked_by}</span>}
+                      {!history.immutable && !history.locked_by && (
+                        <Button size="sm" kind="ghost" onClick={() => checkout(d.id)}>Check out</Button>
+                      )}
+                    </div>
+                    {history.propagation?.dependents_possibly_stale && (
+                      <p className="dam-meta" style={{ color: 'var(--ibm-warning)' }}>
+                        ⚠ Master edited — {history.propagation.dependents.join(', ')} may be out of sync.
+                      </p>
+                    )}
+                    {history.versions.length === 0 ? (
+                      <p className="dam-muted">No versions yet.</p>
+                    ) : history.versions.slice().reverse().map((v) => (
+                      <div key={v.version} className="dam-feed__row">
+                        <span className="dam-pill dam-pill--info dam-pill--plain">v{v.version}</span>
+                        <div className="dam-feed__text">
+                          <div className="dam-feed__title">{v.change_summary || '(no summary)'}</div>
+                          <div className="dam-feed__sub">{v.author} · {String(v.created_at).slice(0, 19).replace('T', ' ')}</div>
+                        </div>
+                        {v.version > 1 && (
+                          <Button size="sm" kind="ghost" onClick={() => showDiff(d.id, v.version - 1, v.version)}>
+                            diff v{v.version - 1}→v{v.version}
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    {diff && <pre className="dam-doc-preview" style={{ height: 'auto', maxHeight: 240, overflow: 'auto', padding: 'var(--sp-3)', whiteSpace: 'pre-wrap' }}>{diff}</pre>}
+                    {history.locked_by && !history.immutable && (
+                      <div style={{ marginTop: 'var(--sp-3)' }}>
+                        <TextArea id={`ci-${d.id}`} labelText="New version content"
+                          value={checkinText} onChange={(e) => setCheckinText(e.target.value)} />
+                        <TextInput id={`cis-${d.id}`} labelText="Change summary" size="sm"
+                          value={checkinSummary} onChange={(e) => setCheckinSummary(e.target.value)}
+                          style={{ margin: 'var(--sp-2) 0' }} />
+                        <Button size="sm" renderIcon={Checkmark} onClick={() => checkin(d.id)}>Check in version</Button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             ))}
