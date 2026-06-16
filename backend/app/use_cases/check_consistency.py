@@ -9,7 +9,12 @@ from time import perf_counter
 
 from pydantic import BaseModel
 
-from app.domain.models import ConsistencyFinding, ConsistencyReport, new_trace_id
+from app.domain.models import (
+    ConsistencyFinding,
+    ConsistencyReport,
+    finding_id,
+    new_trace_id,
+)
 from app.domain.sla import sla_target_ms, within_sla
 from app.domain.taxonomy import normalize_severity
 from app.domain.ports import (
@@ -78,7 +83,10 @@ async def check_consistency(
     # Normalize each severity to the configured default for its type when the
     # model leaves it invalid (taxonomy defaults are config-driven, 3.4).
     findings = [
-        f.model_copy(update={"severity": normalize_severity(f.kind, f.severity)})
+        f.model_copy(update={
+            "severity": normalize_severity(f.kind, f.severity),
+            "id": finding_id(case_id, f),
+        })
         for f in result.findings
     ]
     report = ConsistencyReport(

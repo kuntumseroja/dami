@@ -10,6 +10,7 @@ from app.domain.models import (
     DocumentType,
     DraftRequest,
     IngestionResult,
+    FindingResolution,
     NotaDraft,
     ParagraphAction,
     ReconciliationReport,
@@ -28,6 +29,12 @@ from app.use_cases.check_consistency import check_consistency
 from app.use_cases.cover_checklist import build_cover_checklist
 from app.use_cases.metrics import summarize_latency
 from app.use_cases.reconcile_numbers import reconcile_numbers
+from app.use_cases.resolve_findings import (
+    ResolutionInvalid,
+    get_resolution_state,
+    record_resolution,
+    summarize_false_positives,
+)
 from app.use_cases.draft_nota import draft_nota
 from app.use_cases.draft_review import (
     export_nota_markdown,
@@ -331,6 +338,43 @@ async def agent_reconcile(
     return await reconcile_numbers(case_id, router=c.router, embedder=c.embedder,
                                    vectors=c.vectors, repository=c.repository,
                                    audit=c.audit, reranker=c.reranker)
+
+
+@router.post("/cases/{case_id}/findings/{fid}/resolution")
+async def resolve_finding(
+    case_id: str,
+    fid: str,
+    status: str = Form(...),
+    justification: str = Form(""),
+    kind: str = Form(""),
+    user: User = Depends(require_roles(Role.REVIEWER, Role.APPROVER)),
+    c: Container = Depends(deps),
+):
+    """Record a finding resolution (resolved / accepted_as_is / deferred / incorrect_flag)."""
+    if status not in ("resolved", "accepted_as_is", "deferred", "incorrect_flag"):
+        raise HTTPException(422, "invalid status")
+    res = FindingResolution(case_id=case_id, finding_id=fid, kind=kind,
+                            status=status, justification=justification, actor=user.id)
+    try:
+        await record_resolution(res, repository=c.repository, audit=c.audit)
+    except ResolutionInvalid as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return res.model_dump(mode="json")
+
+
+@router.get("/cases/{case_id}/findings/resolutions")
+async def finding_resolutions(case_id: str, c: Container = Depends(deps)):
+    return await get_resolution_state(case_id, repository=c.repository)
+
+
+@router.get("/metrics/false-positives")
+async def false_positive_metrics(
+    limit: int = 5000,
+    user: User = Depends(get_current_user),
+    c: Container = Depends(deps),
+):
+    """Weekly false-positive aggregation from the audit trail (AC-2.6)."""
+    return summarize_false_positives(c.audit.read(limit))
 
 
 @router.post("/agents/route", response_model=RoutingDecision)

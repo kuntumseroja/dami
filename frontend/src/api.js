@@ -34,6 +34,13 @@ export const api = {
     }).then(json),
   checkConsistency: (caseId) =>
     fetch(`/api/agents/consistency/${caseId}`, { method: 'POST' }).then(json),
+  resolveFinding: (caseId, fid, status, justification, kind) =>
+    fetch(`/api/cases/${caseId}/findings/${fid}/resolution`, {
+      method: 'POST',
+      body: form({ status, justification: justification || '', kind: kind || '' }),
+    }).then(json),
+  findingResolutions: (caseId) =>
+    fetch(`/api/cases/${caseId}/findings/resolutions`).then(json),
   reconcile: (caseId) =>
     fetch(`/api/agents/reconcile/${caseId}`, { method: 'POST' }).then(json),
   draftAction: (caseId, paragraphId, action, finalContent) =>

@@ -383,6 +383,7 @@ class SubmissionFields(BaseModel):
 # --- Consistency ------------------------------------------------------------------
 
 class ConsistencyFinding(BaseModel):
+    id: str = ""               # stable content hash — resolution anchor (3.5)
     # PRD 8-type taxonomy + Critical/Warning/Informational severities (3.4).
     severity: Literal["critical", "warning", "informational"]
     kind: Literal[
@@ -405,6 +406,24 @@ class ConsistencyReport(BaseModel):
     documents_compared: list[str]
     trace_id: str
     generated_at: datetime = Field(default_factory=utcnow)
+
+
+def finding_id(case_id: str, f: ConsistencyFinding) -> str:
+    """Stable id from finding content — survives re-runs so resolutions stick."""
+    import hashlib
+    key = f"{case_id}|{f.kind}|{f.document_a}|{f.excerpt_a}|{f.document_b}|{f.excerpt_b}"
+    return "fnd_" + hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
+
+
+class FindingResolution(BaseModel):
+    """A reviewer's decision on a flagged consistency item (Sprint 3.5)."""
+    case_id: str
+    finding_id: str
+    kind: str = ""                  # finding type — for false-positive aggregation
+    status: Literal["resolved", "accepted_as_is", "deferred", "incorrect_flag"]
+    justification: str = ""
+    actor: str = ""
+    at: datetime = Field(default_factory=utcnow)
 
 
 # --- Financial & statistical reconciliation (FR-2a, addendum A1, Sprint 3.11) -----

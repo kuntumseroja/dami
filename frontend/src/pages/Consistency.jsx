@@ -22,16 +22,32 @@ export default function Consistency() {
   const [reconBusy, setReconBusy] = useState(false);
   const [error, setError] = useState(null);
 
+  const [resolutions, setResolutions] = useState({});
+  const [justif, setJustif] = useState({});
+
   const run = async () => {
     setBusy(true);
     setError(null);
     try {
       setReport(await api.checkConsistency(caseId));
+      api.findingResolutions(caseId).then(setResolutions).catch(() => setResolutions({}));
     } catch (e) {
       setError(e.message);
     } finally {
       setBusy(false);
     }
+  };
+
+  const resolve = async (f, status) => {
+    const j = justif[f.id] || '';
+    if ((status === 'accepted_as_is' || status === 'incorrect_flag') && !j.trim()) {
+      setError('A justification is required for accept-as-is / incorrect-flag.');
+      return;
+    }
+    try {
+      await api.resolveFinding(caseId, f.id, status, j, f.kind);
+      setResolutions((m) => ({ ...m, [f.id]: { status, justification: j } }));
+    } catch (e) { setError(e.message); }
   };
 
   const reconcile = async () => {
@@ -134,11 +150,15 @@ export default function Consistency() {
               <div className="dam-meta">trace <code>{report.trace_id}</code></div>
             </div>
           </div>
-          {report.findings.map((f, i) => (
-            <div key={i} className={`dam-card dam-finding dam-finding--${f.severity}`}>
-              <div style={{ display: 'flex', gap: 'var(--sp-2)', marginBottom: 'var(--sp-2)' }}>
+          {report.findings.map((f, i) => {
+            const r = resolutions[f.id];
+            const border = f.severity === 'critical' ? 'critical' : f.severity === 'warning' ? 'major' : 'minor';
+            return (
+            <div key={i} className={`dam-card dam-finding dam-finding--${border}`}>
+              <div style={{ display: 'flex', gap: 'var(--sp-2)', marginBottom: 'var(--sp-2)', alignItems: 'center' }}>
                 <span className={`dam-pill dam-pill--${SEVERITY_PILL[f.severity]}`}>{f.severity}</span>
                 <span className="dam-pill dam-pill--neutral dam-pill--plain">{f.kind.replaceAll('_', ' ')}</span>
+                {r && <span className={`dam-pill dam-pill--${r.status === 'incorrect_flag' ? 'neutral' : r.status === 'resolved' ? 'success' : 'warning'} dam-pill--plain`} style={{ marginLeft: 'auto' }}>{r.status.replaceAll('_', ' ')}</span>}
               </div>
               <p style={{ marginTop: 0 }}>{f.description}</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-4)' }}>
@@ -154,8 +174,21 @@ export default function Consistency() {
               <p className="dam-resolution">
                 <strong>Suggested resolution:</strong> {f.suggested_resolution}
               </p>
+              {r?.justification && <p className="dam-meta">Justification: {r.justification}</p>}
+              <TextInput id={`just-${f.id}`} size="sm" labelText=""
+                placeholder="Justification (required for accept-as-is / incorrect flag)"
+                value={justif[f.id] || ''}
+                onChange={(e) => setJustif((m) => ({ ...m, [f.id]: e.target.value }))}
+                style={{ marginBottom: 'var(--sp-2)' }} />
+              <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+                <Button size="sm" kind="ghost" onClick={() => resolve(f, 'resolved')}>Resolved</Button>
+                <Button size="sm" kind="ghost" onClick={() => resolve(f, 'accepted_as_is')}>Accept as-is</Button>
+                <Button size="sm" kind="ghost" onClick={() => resolve(f, 'deferred')}>Defer</Button>
+                <Button size="sm" kind="ghost" onClick={() => resolve(f, 'incorrect_flag')}>Incorrect flag</Button>
+              </div>
             </div>
-          ))}
+            );
+          })}
         </>
       )}
     </div>
