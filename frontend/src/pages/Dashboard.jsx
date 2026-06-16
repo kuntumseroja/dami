@@ -176,8 +176,8 @@ export default function Dashboard() {
                 className="dam-process"
                 role="button"
                 tabIndex={0}
-                onClick={() => navigate('/drafting')}
-                onKeyDown={(e) => e.key === 'Enter' && navigate('/drafting')}
+                onClick={() => navigate(`/drafting/${c.case_id}`)}
+                onKeyDown={(e) => e.key === 'Enter' && navigate(`/drafting/${c.case_id}`)}
               >
                 <div className="dam-stack" aria-hidden="true">
                   <span className="dam-stack__sheet" />

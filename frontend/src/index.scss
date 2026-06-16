@@ -309,6 +309,56 @@ code, pre {
   color: var(--ibm-text-muted);
 }
 
+/* -- Case context banner (drafting from an active process) --------------- */
+.dam-casebar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--bg-card);
+  border: 1px solid var(--ibm-border);
+  border-left: 3px solid var(--ibm-blue);
+  border-radius: var(--radius-card);
+  box-shadow: var(--elev-1);
+  margin-bottom: var(--sp-4);
+}
+.dam-casebar__title { font: var(--type-h5); }
+.dam-casebar__meta { color: var(--ibm-text-muted); font: var(--type-label); }
+.dam-casebar__spacer { flex: 1; }
+
+/* -- Attached-document list --------------------------------------------- */
+.dam-doc {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--ibm-border);
+}
+.dam-doc:last-child { border-bottom: 0; }
+.dam-doc__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-control);
+  background: var(--ibm-blue-very-pale);
+  color: var(--ibm-blue-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.dam-doc__name { font: var(--type-body); font-size: 14px; }
+.dam-doc__meta { color: var(--ibm-text-muted); font: var(--type-label); }
+.dam-doc__tags { display: flex; gap: var(--sp-2); margin-left: auto; flex-shrink: 0; }
+
+.dam-subhead {
+  font: var(--type-h5);
+  margin: var(--sp-2) 0 var(--sp-2);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
 /* -- Shared agent-page elements (unchanged semantics) -------------------- */
 .dam-section-judgment {
   background: var(--dam-blue-10);

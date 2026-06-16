@@ -62,6 +62,7 @@ export default function App() {
         <Routes>
           <RouterRoute path="/" element={<Dashboard />} />
           <RouterRoute path="/drafting" element={<Drafting />} />
+          <RouterRoute path="/drafting/:caseId" element={<Drafting />} />
           <RouterRoute path="/consistency" element={<Consistency />} />
           <RouterRoute path="/routing" element={<Routing />} />
           <RouterRoute path="/audit" element={<Audit />} />
