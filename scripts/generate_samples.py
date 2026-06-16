@@ -1,6 +1,6 @@
 """Generate realistic SOE corporate-action submission packages (NOTA inputs).
 
-Produces PDFs and DOCX into ../samples/ — thirteen cases spanning the
+Produces PDFs and DOCX into ../samples/ — fourteen cases spanning the
 delegation-of-authority tiers and the full corporate-action spectrum
 (disposal, lease, investment, debt issuance, M&A, capex/PSN, write-off,
 bank merger, controlling-stake acquisition, rights issue, spin-off, IPO,
@@ -444,6 +444,137 @@ def case_m():
     )
 
 
+# ── Case N — Strategic investment / factory expansion, with full collateral ──
+# Mirrors a real layered-review Nota Dinas: a main request letter PLUS three
+# mandatory attachments (Feasibility Study, Kajian Hukum, Surat Rekomendasi
+# Dekom). Routed to the Investment & Risk committees (SOP-006, Dewan Pengawas).
+def case_n():
+    # --- N1: the Nota Dinas (primary submission letter) ---
+    meta_rows = [
+        ["Field", "Keterangan"],
+        ["Kepada Yth.", "Kepala Danantara u.p. Managing Director Investment Sektoral"],
+        ["Dari", "Direktur Utama PT Krakatau Steel (Persero) Tbk"],
+        ["Sifat", "Segera / Rahasia"],
+        ["Lampiran", "3 (tiga) Berkas — Feasibility Study, Kajian Hukum, Surat Rekomendasi Dekom"],
+        ["Perihal", "Permohonan Persetujuan Rencana Investasi Strategis Ekspansi Pabrik Baja Lapis Unit 2"],
+        ["Tanggal", "16 Juni 2026"],
+    ]
+    fin_rows = [
+        ["Indikator finansial / Financial indicator", "Nilai / Value"],
+        ["Total kebutuhan dana (total funding)", money(850_000_000_000)],
+        ["Kas internal (30%)", money(255_000_000_000)],
+        ["Sindikasi Bank Himbara (70%)", money(595_000_000_000)],
+        ["Internal Rate of Return (IRR)", "14,5% (di atas WACC 9,5%)"],
+        ["Net Present Value (NPV)", "Positif " + money(120_000_000_000)],
+        ["Payback Period", "5,8 tahun"],
+    ]
+    pdf(
+        "N1_nota_dinas.pdf",
+        "NOTA DINAS — Nomor: ND-0412/KS/VI/2026",
+        "PT Krakatau Steel (Persero) Tbk → Danantara · Segera / Rahasia · 16 Juni 2026",
+        [
+            table(meta_rows, [42, 128]),
+            "<b>I. LATAR BELAKANG DAN DASAR HUKUM.</b> Dasar internal: Anggaran Dasar "
+            "Perseroan Pasal 12 (kewenangan Direksi dan batas nilai transaksi yang "
+            "memerlukan persetujuan Pemegang Saham) dan RKAP Tahun Buku 2026. Dasar "
+            "eksternal: Peraturan Pemerintah tentang pengalihan hak Pemegang Saham Negara "
+            "kepada Danantara. Kondisi eksisting: utilisasi pabrik telah mencapai 95% "
+            "sementara permintaan pasar domestik dan regional diproyeksikan tumbuh 12% "
+            "per tahun hingga 2030.",
+            "<b>II. MAKSUD DAN TUJUAN.</b> Memohon persetujuan tertulis atas rencana "
+            "investasi pembangunan lini produksi baru (Pabrik Baja Lapis Unit 2) dengan "
+            "total nilai investasi " + money(850_000_000_000) + ". Tujuan: meningkatkan "
+            "kapasitas produksi tahunan 40%, menangkap pasar ekspor Asia Tenggara, dan "
+            "menurunkan biaya operasional 15% melalui digitalisasi.",
+            "<b>III. KAJIAN KELAYAKAN KOMERSIAL DAN ASPEK FINANSIAL</b> (di-review oleh "
+            "MD Investment & MD Finance Danantara). Berdasarkan Feasibility Study yang "
+            "disusun bersama Konsultan Independen PT Daya Makara Konsultan:",
+            table(fin_rows, [100, 70]),
+            "<b>IV. MANAJEMEN RISIKO DAN KEPATUHAN (ESG)</b> (di-review oleh MD Risk & "
+            "Sustainability serta MD Legal Danantara). Risiko bahan baku dimitigasi "
+            "melalui kontrak pasokan jangka panjang 5 tahun; risiko likuiditas "
+            "diselaraskan dengan arus kas (grace period 2 tahun). ESG: target reduksi "
+            "emisi karbon 20% dan sistem pengolahan limbah mandiri (Zero Waste).",
+            "<b>V. REKOMENDASI DEWAN KOMISARIS.</b> Sesuai Surat Dewan Komisaris Nomor "
+            "S-027/DEKOM-KS/VI/2026 tanggal 10 Juni 2026, Dewan Komisaris memberikan "
+            "Rekomendasi Penuh kepada Direksi untuk mengeksekusi dan mengajukan "
+            "persetujuan akhir ke Danantara.",
+            "<b>VI. KESIMPULAN DAN PERMOHONAN PERSETUJUAN.</b> Aksi korporasi ekspansi "
+            "pabrik ini layak secara finansial, risikonya termitigasi, dan sejalan "
+            "dengan fokus value creation Danantara. Kami memohon Surat Persetujuan "
+            "Prinsip atas Rencana Investasi Ekspansi Pabrik.",
+            "Hormat kami, Direksi PT Krakatau Steel (Persero) Tbk. "
+            "Tembusan: CIO Danantara; MD Risk & Sustainability Danantara; Dewan "
+            "Komisaris Perseroan.",
+        ],
+    )
+    # --- N2: Feasibility Study (collateral) ---
+    fs_rows = [
+        ["Parameter", "Nilai / Value"],
+        ["Total nilai investasi (project size)", money(850_000_000_000)],
+        ["Tambahan kapasitas produksi", "+40% per tahun"],
+        ["Efisiensi biaya operasional", "-15%"],
+        ["IRR proyek", "14,5%"],
+        ["WACC perusahaan", "9,5%"],
+        ["NPV", "Positif " + money(120_000_000_000)],
+        ["Payback period", "5,8 tahun"],
+        ["Proyeksi pertumbuhan permintaan", "12% per tahun s.d. 2030"],
+    ]
+    pdf(
+        "N2_feasibility_study.pdf",
+        "FEASIBILITY STUDY (KAJIAN KELAYAKAN)",
+        "Ekspansi Pabrik Baja Lapis Unit 2 · Konsultan Independen PT Daya Makara Konsultan",
+        [
+            "Ringkasan kelayakan komersial dan finansial atas rencana pembangunan "
+            "Pabrik Baja Lapis Unit 2:",
+            table(fs_rows, [100, 70]),
+            "<b>Kesimpulan:</b> Proyek layak dilaksanakan — IRR (14,5%) berada di atas "
+            "WACC (9,5%), NPV positif, dan payback period dalam batas wajar industri. "
+            "Struktur pendanaan 30% kas internal dan 70% sindikasi Bank Himbara.",
+        ],
+    )
+    # --- N3: Kajian Hukum (legal review collateral) ---
+    pdf(
+        "N3_kajian_hukum.pdf",
+        "KAJIAN HUKUM (LEGAL REVIEW)",
+        "Aspek Hukum Rencana Ekspansi Pabrik · Divisi Hukum PT Krakatau Steel (Persero) Tbk",
+        [
+            "<b>1. Status lahan:</b> Seluruh lahan pembangunan unit baru merupakan milik "
+            "sah Perseroan dengan sertifikat Hak Guna Bangunan (HGB) aktif dan bebas "
+            "dari sengketa hukum.",
+            "<b>2. Kewenangan korporasi:</b> Rencana investasi sesuai Anggaran Dasar "
+            "Pasal 12; nilai transaksi melampaui batas kewenangan Direksi sehingga "
+            "memerlukan persetujuan Pemegang Saham (Danantara).",
+            "<b>3. Kepatuhan eksternal:</b> Sesuai Peraturan Pemerintah tentang "
+            "pengalihan hak Pemegang Saham Negara kepada Danantara; tidak terdapat "
+            "hambatan regulasi sektoral atas pembangunan lini produksi baru.",
+            "<b>4. Perizinan:</b> Izin lingkungan (AMDAL) dan izin usaha industri dalam "
+            "proses perpanjangan; tidak ada perkara litigasi yang membahayakan proyek.",
+            "<b>Kesimpulan:</b> Tidak ditemukan halangan hukum yang menghalangi "
+            "pelaksanaan aksi korporasi ini sepanjang persetujuan Pemegang Saham diperoleh.",
+        ],
+    )
+    # --- N4: Surat Rekomendasi Dewan Komisaris (collateral) ---
+    pdf(
+        "N4_surat_rekomendasi_dekom.pdf",
+        "SURAT REKOMENDASI DEWAN KOMISARIS",
+        "Nomor: S-027/DEKOM-KS/VI/2026 · Tanggal: 10 Juni 2026",
+        [
+            "Kepada Yth. Direksi PT Krakatau Steel (Persero) Tbk.",
+            "<b>Perihal:</b> Rekomendasi atas Rencana Investasi Strategis Ekspansi "
+            "Pabrik Baja Lapis Unit 2.",
+            "Setelah melakukan peninjauan dan pengawasan atas rencana investasi senilai "
+            + money(850_000_000_000) + ", termasuk kajian kelayakan dan mitigasi risiko, "
+            "Dewan Komisaris menilai bahwa rencana ini layak secara strategis dan "
+            "finansial serta memiliki struktur risiko yang termitigasi dengan baik.",
+            "Dengan ini Dewan Komisaris memberikan <b>Rekomendasi Penuh</b> kepada "
+            "Direksi untuk mengeksekusi rencana tersebut dan mengajukan permohonan "
+            "persetujuan akhir kepada Danantara selaku Pemegang Saham.",
+            "Hormat kami, Dewan Komisaris PT Krakatau Steel (Persero) Tbk.",
+        ],
+    )
+
+
 # ── Standardized NOTA cover sheets (PRD addendum: mandatory fields + disclaimer) ─
 # One per case. Bilingual mandatory-field table + completeness checklist + the
 # mandatory AI-assistance disclaimer + human sign-off blocks (left blank — the
@@ -494,6 +625,9 @@ COVERS = [
     ("M0_lembar_pengantar.pdf", "011/MNA/LIK/VI/2026", "Tim Restrukturisasi Portofolio BUMN",
      "Logistik", "Pembubaran / likuidasi / Dissolution", 1_200_000_000_000, "Restricted / Terbatas",
      "SOP-DAM-009", "dewan_pengawas"),
+    ("N0_lembar_pengantar.pdf", "ND-0412/KS/VI/2026", "PT Krakatau Steel (Persero) Tbk",
+     "Industri & Manufaktur", "Investasi strategis / ekspansi pabrik (CAPEX)", 850_000_000_000,
+     "Confidential / Rahasia", "SOP-DAM-006", "dewan_pengawas"),
 ]
 
 DISCLAIMER = (
@@ -550,7 +684,7 @@ def cover_sheet(spec):
 if __name__ == "__main__":
     print("Generating sample SOE corporate-action packages into", OUT)
     for fn in (case_a, case_b, case_c, case_d, case_e, case_f, case_g,
-               case_h, case_i, case_j, case_k, case_l, case_m):
+               case_h, case_i, case_j, case_k, case_l, case_m, case_n):
         fn()
     for spec in COVERS:
         cover_sheet(spec)

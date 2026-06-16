@@ -1,6 +1,6 @@
 """Seed the running DAM platform with realistic demo cases + documents.
 
-Creates thirteen SOE corporate-action cases and ingests their submission
+Creates fourteen SOE corporate-action cases and ingests their submission
 packages (the PDFs/DOCX from generate_samples.py) through the live API, so
 the app has reality-shaped data to demo across every delegation tier and the
 full spectrum of corporate actions: asset disposal (with a planted valuation
@@ -137,6 +137,19 @@ CASES = [
         "docs": [
             ("M0_lembar_pengantar.pdf", "cover_sheet"),
             ("M1_surat_permohonan_pembubaran.pdf", "submission"),
+        ],
+    },
+    {
+        # Layered-review package: Nota Dinas + 3 mandatory collateral documents
+        # (Feasibility Study, Kajian Hukum, Surat Rekomendasi Dekom).
+        "title": "Investasi ekspansi Pabrik Baja Lapis Unit 2 — Krakatau Steel (capex)",
+        "classification": "confidential",
+        "docs": [
+            ("N0_lembar_pengantar.pdf", "cover_sheet"),
+            ("N1_nota_dinas.pdf", "submission"),
+            ("N2_feasibility_study.pdf", "submission"),
+            ("N3_kajian_hukum.pdf", "submission"),
+            ("N4_surat_rekomendasi_dekom.pdf", "submission"),
         ],
     },
 ]
