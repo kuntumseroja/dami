@@ -1,0 +1,14 @@
+# Strategic corporate-action NOTA — richer structure for M&A, investment, debt,
+# capex, and equity capital markets (feasibility, transaction structure, ESG).
+id: nota-strategic
+name: NOTA Aksi Strategis (M&A / investasi / pasar modal)
+applies_to: ["SOP-DAM-002", "SOP-DAM-004", "SOP-DAM-005", "SOP-DAM-006", "SOP-DAM-008"]
+sections:
+  - { heading: "Latar Belakang (Background)", kind: descriptive, mandatory: true }
+  - { heading: "Ringkasan Permohonan (Request Summary)", kind: descriptive, mandatory: true }
+  - { heading: "Dasar Hukum & Referensi (Legal Basis & References)", kind: descriptive, mandatory: true }
+  - { heading: "Kajian Kelayakan & Finansial (Commercial & Financial Feasibility)", kind: descriptive, mandatory: true }
+  - { heading: "Struktur Transaksi (Transaction Structure)", kind: descriptive, mandatory: true }
+  - { heading: "Manajemen Risiko & Kepatuhan (Risk & Compliance / ESG)", kind: descriptive, mandatory: true }
+  - { heading: "Analisis & Pertimbangan (Analysis & Considerations)", kind: judgment, mandatory: true }
+  - { heading: "Rekomendasi (Recommendation)", kind: judgment, mandatory: true }

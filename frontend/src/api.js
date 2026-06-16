@@ -25,11 +25,12 @@ export const api = {
       method: 'POST',
       body: form({ file, doc_type: docType, case_id: caseId }),
     }).then(json),
-  draft: (caseId, instructions) =>
+  listTemplates: () => fetch('/api/templates').then(json),
+  draft: (caseId, instructions, templateId) =>
     fetch('/api/agents/draft', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ case_id: caseId, instructions }),
+      body: JSON.stringify({ case_id: caseId, instructions, template_id: templateId || null }),
     }).then(json),
   checkConsistency: (caseId) =>
     fetch(`/api/agents/consistency/${caseId}`, { method: 'POST' }).then(json),

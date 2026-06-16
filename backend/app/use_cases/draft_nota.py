@@ -8,31 +8,61 @@ from time import perf_counter
 
 from pydantic import BaseModel
 
-from app.domain.models import DraftRequest, NotaDraft, NotaSection, new_trace_id
-from app.domain.sla import sla_target_ms, within_sla
+from app.domain.models import (
+    DraftRequest,
+    NotaDraft,
+    NotaSection,
+    NotaTemplate,
+    new_trace_id,
+)
 from app.domain.ports import (
     AuditLog,
     CaseRepository,
     Embedder,
     ModelRouter,
     Reranker,
+    TemplateStore,
     VectorStore,
 )
-from app.use_cases.grounding import enforce_grounding
+from app.domain.sla import sla_target_ms, within_sla
+from app.domain.models import TemplateSection
+from app.use_cases.cover_checklist import _resolve_sop
+from app.use_cases.grounding import DATA_UNAVAILABLE_MARKER, enforce_grounding
 from app.use_cases.retrieval import format_context, retrieve
 
-# Default NOTA structure; Sprint 3 moves this into the template store.
-DESCRIPTIVE_SECTIONS = [
-    "Latar Belakang (Background)",
-    "Ringkasan Permohonan (Request Summary)",
-    "Dasar Hukum & Referensi (Legal Basis & References)",
-    "Kronologi & Status (Chronology & Status)",
-    "Data Pendukung (Supporting Data)",
-]
-JUDGMENT_SECTIONS = [
-    "Analisis & Pertimbangan (Analysis & Considerations)",
-    "Rekomendasi (Recommendation)",
-]
+# Used only when no TemplateStore is supplied (direct calls / minimal contexts).
+_FALLBACK_TEMPLATE = NotaTemplate(
+    id="nota-standard", name="NOTA Standar (fallback)", applies_to=["*"],
+    sections=[
+        TemplateSection(heading="Latar Belakang (Background)", kind="descriptive", mandatory=True),
+        TemplateSection(heading="Ringkasan Permohonan (Request Summary)", kind="descriptive", mandatory=True),
+        TemplateSection(heading="Dasar Hukum & Referensi (Legal Basis & References)", kind="descriptive", mandatory=True),
+        TemplateSection(heading="Kronologi & Status (Chronology & Status)", kind="descriptive", mandatory=False),
+        TemplateSection(heading="Data Pendukung (Supporting Data)", kind="descriptive", mandatory=True),
+        TemplateSection(heading="Analisis & Pertimbangan (Analysis & Considerations)", kind="judgment", mandatory=True),
+        TemplateSection(heading="Rekomendasi (Recommendation)", kind="judgment", mandatory=True),
+    ],
+)
+
+
+def mandatory_status(template: NotaTemplate,
+                     sections: list[NotaSection]) -> tuple[list[str], bool]:
+    """Mandatory descriptive sections must be grounded — not invented (A3).
+
+    A mandatory descriptive section is "missing" if it is absent, suppressed
+    (ungrounded), empty, or carries the data-unavailable marker. Judgment
+    sections are human-authored, so they don't block the AI draft."""
+    by_heading = {s.heading: s for s in sections}
+    missing = []
+    for ts in template.sections:
+        if not ts.mandatory or ts.kind != "descriptive":
+            continue
+        s = by_heading.get(ts.heading)
+        content = (s.content if s else "").strip()
+        ok = bool(s) and s.grounded and content and DATA_UNAVAILABLE_MARKER not in content
+        if not ok:
+            missing.append(ts.heading)
+    return missing, not missing
 
 
 class DraftedSection(BaseModel):
@@ -68,18 +98,30 @@ mohon dilengkapi]" rather than inventing content."""
 async def draft_nota(
     request: DraftRequest, *, router: ModelRouter, embedder: Embedder,
     vectors: VectorStore, repository: CaseRepository, audit: AuditLog,
-    reranker: Reranker | None = None,
+    reranker: Reranker | None = None, templates: TemplateStore | None = None,
 ) -> NotaDraft:
     trace_id = new_trace_id()
     started = perf_counter()
     llm = router.gateway("drafting")
+
+    # Template selection (3.1): explicit template_id → case's SOP → default.
+    template: NotaTemplate | None = None
+    if templates is not None:
+        if request.template_id:
+            template = templates.get(request.template_id)
+        if template is None:
+            sop_id = await _resolve_sop(request.case_id, repository)
+            template = templates.select(sop_id)
+    if template is None:                       # standalone / no store: minimal default
+        template = _FALLBACK_TEMPLATE
+
     chunks = await retrieve(
         "submission background legal basis chronology supporting data",
         embedder=embedder, vectors=vectors, reranker=reranker,
         k=16, case_id=request.case_id,
         doc_types=["submission", "historical_nota", "template"],
     )
-    headings = "\n".join(f"- {h}" for h in DESCRIPTIVE_SECTIONS)
+    headings = "\n".join(f"- {s.heading}" for s in template.descriptive)
     extra = f"\nAdditional instructions: {request.instructions}" if request.instructions else ""
 
     drafted = await llm.parse(
@@ -99,8 +141,8 @@ async def draft_nota(
                     sources=s.source_refs)
         for s in drafted.sections
     ] + [
-        NotaSection(heading=h, kind="judgment", content="", sources=[])
-        for h in JUDGMENT_SECTIONS
+        NotaSection(heading=s.heading, kind="judgment", content="", sources=[])
+        for s in template.judgment
     ]
 
     # Hard source-traceability gate (FR-1, AC-1.3): no descriptive content is
@@ -109,6 +151,10 @@ async def draft_nota(
     # content is suppressed to a low-confidence placeholder.
     valid_refs = {c.ref for c in chunks}
     sections, grounding_report = enforce_grounding(sections, valid_refs)
+
+    # Mandatory-field enforcement (A3): a mandatory section the sources can't
+    # support is flagged as blocking — never invented.
+    mandatory_missing, complete = mandatory_status(template, sections)
 
     latency_ms = int((perf_counter() - started) * 1000)
     draft = NotaDraft(
@@ -121,6 +167,9 @@ async def draft_nota(
         coverage=grounding_report["coverage"],
         source_sufficient=grounding_report["sufficient"],
         insufficient_sections=grounding_report["insufficient_sections"],
+        template_id=template.id,
+        mandatory_missing=mandatory_missing,
+        complete=complete,
     )
 
     await repository.save_artefact(request.case_id, "nota_draft",
@@ -131,9 +180,11 @@ async def draft_nota(
         {
             "case_id": request.case_id,
             "model": llm.model,
+            "template_id": template.id,
             "sources": [c.ref for c in chunks],
             "sections_drafted": [s.heading for s in drafted.sections],
             "grounding_gate": grounding_report,   # checked / passed / suppressed / stripped_refs
+            "mandatory_missing": mandatory_missing,
             "latency_ms": latency_ms,
             "sla_ms": sla_target_ms("agent.drafting"),
             "within_sla": within_sla("agent.drafting", latency_ms),

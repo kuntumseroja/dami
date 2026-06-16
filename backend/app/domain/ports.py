@@ -9,7 +9,13 @@ from typing import TypeVar
 
 from pydantic import BaseModel
 
-from app.domain.models import Case, Chunk, GovernanceDocument, ParsedDocument
+from app.domain.models import (
+    Case,
+    Chunk,
+    GovernanceDocument,
+    NotaTemplate,
+    ParsedDocument,
+)
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -141,6 +147,20 @@ class ObjectStorage(ABC):
 
     @abstractmethod
     def delete(self, key: str) -> None: ...
+
+
+class TemplateStore(ABC):
+    """NOTA template catalogue (Sprint 3.1). Templates are data, not code."""
+
+    @abstractmethod
+    def get(self, template_id: str) -> "NotaTemplate | None": ...
+
+    @abstractmethod
+    def list(self) -> "list[NotaTemplate]": ...
+
+    @abstractmethod
+    def select(self, sop_id: str | None) -> "NotaTemplate":
+        """Best template for an SOP (applies_to match), else the default."""
 
 
 class DocumentParser(ABC):

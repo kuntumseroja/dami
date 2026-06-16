@@ -13,6 +13,7 @@ from app.domain.ports import (
     Embedder,
     ModelRouter,
     Reranker,
+    TemplateStore,
     VectorStore,
 )
 from app.domain.sla import sla_target_ms, within_sla
@@ -26,7 +27,7 @@ from app.use_cases.route_request import route_request
 async def run_case_pipeline(
     case_id: str, user: User, *, router: ModelRouter, embedder: Embedder,
     vectors: VectorStore, repository: CaseRepository, audit: AuditLog,
-    reranker: Reranker | None = None,
+    reranker: Reranker | None = None, templates: TemplateStore | None = None,
 ) -> dict:
     trace_id = new_trace_id()
     started = perf_counter()
@@ -57,7 +58,7 @@ async def run_case_pipeline(
     draft = await draft_nota(
         DraftRequest(case_id=case_id),
         router=router, embedder=embedder, vectors=vectors,
-        repository=repository, audit=audit, reranker=reranker,
+        repository=repository, audit=audit, reranker=reranker, templates=templates,
     )
 
     # 4. Audit the document set for consistency.

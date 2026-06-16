@@ -18,6 +18,7 @@ from app.adapters.reranker import LexicalReranker
 from app.adapters.repo_memory import InMemoryCaseRepository
 from app.adapters.repo_postgres import PostgresCaseRepository
 from app.adapters.storage_local import LocalStorage
+from app.adapters.template_store import YamlTemplateStore
 from app.adapters.vector_pgvector import InMemoryVectorStore, PgVectorStore
 from app.domain.ports import (
     AuditLog,
@@ -29,6 +30,7 @@ from app.domain.ports import (
     ModelRouter,
     ObjectStorage,
     Reranker,
+    TemplateStore,
     VectorStore,
 )
 from app.infrastructure.config import Settings, get_settings
@@ -46,6 +48,7 @@ class Container:
     storage: ObjectStorage
     audit: AuditLog
     parser: DocumentParser
+    templates: TemplateStore
     doc_source: DocumentSource | None = None
 
     async def init(self) -> None:
@@ -116,6 +119,7 @@ def build_container(settings: Settings | None = None) -> Container:
         storage=storage,
         audit=JsonlAuditLog(settings.dam_audit_log_path),
         parser=parser,
+        templates=YamlTemplateStore(settings.templates_config_dir),
         doc_source=doc_source,
     )
 

@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     dam_audit_log_path: str = "./data/audit"
     local_storage_path: str = "./data/objects"
     sop_config_dir: str = "../config/sop"
+    templates_config_dir: str = "../config/templates"   # NOTA template store (3.1)
 
     # Microsoft 365 document source (OneDrive / SharePoint via Graph)
     m365_tenant_id: str = ""

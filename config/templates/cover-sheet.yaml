@@ -1,0 +1,9 @@
+# Cover sheet as a first-class template type (addendum A5). Selected explicitly
+# by template_id, not by SOP (applies_to empty).
+id: cover-sheet
+name: Lembar Pengantar / Cover Sheet
+applies_to: []
+sections:
+  - { heading: "Identitas Permohonan (Request Identity)", kind: descriptive, mandatory: true }
+  - { heading: "Ringkasan Aksi Korporasi (Action Summary)", kind: descriptive, mandatory: true }
+  - { heading: "Kelengkapan & Klasifikasi (Completeness & Classification)", kind: descriptive, mandatory: true }

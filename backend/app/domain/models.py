@@ -287,6 +287,31 @@ class NotaSection(BaseModel):
     grounded: bool = True       # set by the grounding gate — false = suppressed/placeholder
 
 
+# --- NOTA templates (Sprint 3.1, addendum A3/A5) ---------------------------------
+
+class TemplateSection(BaseModel):
+    heading: str
+    kind: Literal["descriptive", "judgment"]
+    mandatory: bool = True
+
+
+class NotaTemplate(BaseModel):
+    """A NOTA structure as data: section list + which are mandatory. Adding a
+    template (YAML) introduces a new structure with zero code change."""
+    id: str
+    name: str
+    applies_to: list[str] = ["*"]      # SOP ids this template serves, or "*"
+    sections: list[TemplateSection]
+
+    @property
+    def descriptive(self) -> list[TemplateSection]:
+        return [s for s in self.sections if s.kind == "descriptive"]
+
+    @property
+    def judgment(self) -> list[TemplateSection]:
+        return [s for s in self.sections if s.kind == "judgment"]
+
+
 class NotaDraft(BaseModel):
     case_id: str
     title: str
@@ -298,6 +323,9 @@ class NotaDraft(BaseModel):
     coverage: float | None = None      # share of descriptive sections grounded (2.6)
     source_sufficient: bool | None = None          # coverage >= target & none suppressed
     insufficient_sections: list[str] = []          # sections sources couldn't support
+    template_id: str | None = None                 # template used (3.1)
+    mandatory_missing: list[str] = []              # mandatory sections not satisfied (A3)
+    complete: bool = True                          # no mandatory section unfilled/invented
 
 
 class DraftRequest(BaseModel):

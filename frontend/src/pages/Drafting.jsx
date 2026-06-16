@@ -5,6 +5,8 @@ import {
   FileUploaderDropContainer,
   InlineLoading,
   InlineNotification,
+  Select,
+  SelectItem,
   TextArea,
   TextInput,
 } from '@carbon/react';
@@ -48,6 +50,10 @@ export default function Drafting() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [previewId, setPreviewId] = useState(null);
+  const [templates, setTemplates] = useState([]);
+  const [templateId, setTemplateId] = useState('');   // '' = auto (by SOP)
+
+  useEffect(() => { api.listTemplates().then(setTemplates).catch(() => setTemplates([])); }, []);
 
   // Refresh the document list + the auto-reconciled completeness checklist.
   const refreshDocs = (id = caseId) => {
@@ -99,7 +105,7 @@ export default function Drafting() {
     setBusy(true);
     setError(null);
     try {
-      setDraft(await api.draft(caseId, instructions || null));
+      setDraft(await api.draft(caseId, instructions || null, templateId || null));
     } catch (e) {
       setError(e.message);
     } finally {
@@ -271,13 +277,24 @@ export default function Drafting() {
           />
         )}
 
+        <Select
+          id="template"
+          labelText="NOTA template"
+          value={templateId}
+          onChange={(e) => setTemplateId(e.target.value)}
+          style={{ marginTop: '1.5rem' }}
+        >
+          <SelectItem value="" text="Auto — select by SOP" />
+          {templates.map((t) => <SelectItem key={t.id} value={t.id} text={t.name} />)}
+        </Select>
+
         <TextArea
           id="instructions"
           labelText="Additional instructions (optional)"
           placeholder="e.g. emphasise the downstreaming rationale; keep tone formal."
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
-          style={{ margin: '1.5rem 0 1rem' }}
+          style={{ margin: '1rem 0' }}
         />
         {busy ? (
           <InlineLoading description="Drafting NOTA from sources…" />
@@ -293,7 +310,10 @@ export default function Drafting() {
           <h2 style={{ fontWeight: 300, marginTop: 0 }}>{draft.title}</h2>
           <p className="dam-meta" style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
             <span>Model: <code>{draft.model}</code></span>
-            <span>Trace: <code>{draft.trace_id}</code></span>
+            {draft.template_id && <span>Template: <code>{draft.template_id}</code></span>}
+            <span className={`dam-pill dam-pill--${draft.complete ? 'success' : 'error'} dam-pill--plain`}>
+              {draft.complete ? 'Mandatory complete' : 'Blocked — mandatory missing'}
+            </span>
             {draft.latency_ms != null && (
               <span className={`dam-pill dam-pill--${draft.latency_ms <= DRAFT_SLA_MS ? 'success' : 'warning'} dam-pill--plain`}>
                 {(draft.latency_ms / 1000).toFixed(1)}s
@@ -306,6 +326,15 @@ export default function Drafting() {
               </span>
             )}
           </p>
+          {draft.mandatory_missing && draft.mandatory_missing.length > 0 && (
+            <InlineNotification
+              kind="error"
+              lowContrast
+              title="Mandatory sections unfilled (blocks completion)"
+              subtitle={`${draft.mandatory_missing.join(', ')} — sources don't support these; they are flagged, not invented. Attach documents and regenerate.`}
+              style={{ marginBottom: 'var(--sp-4)' }}
+            />
+          )}
           {draft.source_sufficient === false && (
             <InlineNotification
               kind="warning"

@@ -1,0 +1,15 @@
+# NOTA template (Sprint 3.1) — data-driven section list. Add a template file
+# here to introduce a new NOTA structure with zero code change. Mandatory
+# descriptive sections must be grounded in sources or they block completion
+# (addendum A3) — they are flagged, never invented.
+id: nota-standard
+name: NOTA Standar (default)
+applies_to: ["*"]            # default — serves any SOP not explicitly mapped
+sections:
+  - { heading: "Latar Belakang (Background)", kind: descriptive, mandatory: true }
+  - { heading: "Ringkasan Permohonan (Request Summary)", kind: descriptive, mandatory: true }
+  - { heading: "Dasar Hukum & Referensi (Legal Basis & References)", kind: descriptive, mandatory: true }
+  - { heading: "Kronologi & Status (Chronology & Status)", kind: descriptive, mandatory: false }
+  - { heading: "Data Pendukung (Supporting Data)", kind: descriptive, mandatory: true }
+  - { heading: "Analisis & Pertimbangan (Analysis & Considerations)", kind: judgment, mandatory: true }
+  - { heading: "Rekomendasi (Recommendation)", kind: judgment, mandatory: true }

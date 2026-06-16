@@ -41,6 +41,12 @@ def deps() -> Container:
 
 # --- Workflow lifecycle --------------------------------------------------------
 
+@router.get("/templates")
+async def list_templates(c: Container = Depends(deps)):
+    """NOTA template catalogue (data-driven; add a YAML to add a structure)."""
+    return [t.model_dump(mode="json") for t in c.templates.list()]
+
+
 @router.get("/workflow/stages")
 async def workflow_stages():
     """The PRD 7-stage governance lifecycle: ordered stages with entry/exit
@@ -252,7 +258,7 @@ async def agent_draft(
 ):
     return await draft_nota(request, router=c.router, embedder=c.embedder,
                             vectors=c.vectors, repository=c.repository, audit=c.audit,
-                            reranker=c.reranker)
+                            reranker=c.reranker, templates=c.templates)
 
 
 @router.post("/agents/consistency/{case_id}", response_model=ConsistencyReport)
@@ -297,7 +303,8 @@ async def agent_pipeline(
     try:
         return await run_case_pipeline(
             case_id, user, router=c.router, embedder=c.embedder, vectors=c.vectors,
-            repository=c.repository, audit=c.audit, reranker=c.reranker)
+            repository=c.repository, audit=c.audit, reranker=c.reranker,
+            templates=c.templates)
     except KeyError as exc:
         raise HTTPException(404, str(exc)) from exc
 
