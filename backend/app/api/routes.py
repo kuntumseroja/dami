@@ -7,6 +7,9 @@ from app.domain.models import (
     STAGE_SPEC,
     BoardGateBlocked,
     ConsistencyReport,
+    DocumentImmutable,
+    DocumentLocked,
+    NotLockHolder,
     DataClassification,
     DocumentType,
     DraftRequest,
@@ -26,7 +29,7 @@ from app.domain.models import (
 from app.domain.taxonomy import CONSISTENCY_TYPES, default_severities
 from app.infrastructure.container import Container, get_container
 from app.infrastructure.security import get_current_user, require_roles
-from app.use_cases import manage_case, manage_document
+from app.use_cases import manage_case, manage_document, versioning
 from app.use_cases.board_gate import unresolved_critical
 from app.use_cases.check_consistency import check_consistency
 from app.use_cases.cover_checklist import build_cover_checklist
@@ -145,6 +148,61 @@ async def advance_case(
     except SignoffRequired as exc:
         raise HTTPException(409, str(exc)) from exc
     return case.model_dump(mode="json")
+
+
+@router.post("/cases/{case_id}/documents/{doc_id}/checkout")
+async def doc_checkout(
+    case_id: str, doc_id: str,
+    user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
+    c: Container = Depends(deps),
+):
+    try:
+        await versioning.checkout(case_id, doc_id, user=user.id,
+                                  repository=c.repository, audit=c.audit)
+    except DocumentImmutable as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except DocumentLocked as exc:
+        raise HTTPException(409, str(exc)) from exc
+    return {"status": "checked_out", "document_id": doc_id, "by": user.id}
+
+
+@router.post("/cases/{case_id}/documents/{doc_id}/checkin")
+async def doc_checkin(
+    case_id: str, doc_id: str,
+    content: str = Form(...),
+    change_summary: str = Form(""),
+    user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
+    c: Container = Depends(deps),
+):
+    try:
+        ver = await versioning.checkin(case_id, doc_id, user=user.id, content=content,
+                                       change_summary=change_summary,
+                                       repository=c.repository, audit=c.audit)
+    except DocumentImmutable as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except NotLockHolder as exc:
+        raise HTTPException(409, str(exc)) from exc
+    return ver.model_dump(mode="json")
+
+
+@router.get("/cases/{case_id}/documents/{doc_id}/versions")
+async def doc_versions(case_id: str, doc_id: str, c: Container = Depends(deps)):
+    return {
+        "versions": await versioning.list_versions(case_id, doc_id, repository=c.repository),
+        "locked_by": await versioning.current_lock(case_id, doc_id, repository=c.repository),
+        "immutable": await versioning.case_immutable(case_id, repository=c.repository),
+        "propagation": await versioning.propagation_status(case_id, doc_id, repository=c.repository),
+    }
+
+
+@router.get("/cases/{case_id}/documents/{doc_id}/diff")
+async def doc_diff(case_id: str, doc_id: str, a: int, b: int,
+                   c: Container = Depends(deps)):
+    try:
+        return {"diff": await versioning.diff_versions(case_id, doc_id, a, b,
+                                                       repository=c.repository)}
+    except KeyError as exc:
+        raise HTTPException(404, str(exc)) from exc
 
 
 @router.get("/cases/{case_id}/board-gate")

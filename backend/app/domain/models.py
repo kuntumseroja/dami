@@ -250,6 +250,29 @@ class ParsedDocument(BaseModel):
     ocr_used: bool = False
 
 
+# --- Document version control (Sprint 3.8, FR-3) ---------------------------------
+
+class DocumentVersion(BaseModel):
+    document_id: str
+    version: int
+    content: str
+    author: str
+    change_summary: str = ""
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class DocumentLocked(Exception):
+    """Document is checked out by another user."""
+
+
+class DocumentImmutable(Exception):
+    """Document is frozen — its case was submitted to the review queue (FR-3)."""
+
+
+class NotLockHolder(Exception):
+    """Check-in attempted without holding the checkout lock."""
+
+
 class GovernanceDocument(BaseModel):
     id: str
     case_id: str | None = None
