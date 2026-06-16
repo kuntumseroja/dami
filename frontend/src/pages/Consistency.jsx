@@ -24,6 +24,10 @@ export default function Consistency() {
 
   const [resolutions, setResolutions] = useState({});
   const [justif, setJustif] = useState({});
+  const [gate, setGate] = useState(null);
+
+  const refreshGate = (id = caseId) =>
+    api.boardGate(id).then(setGate).catch(() => setGate(null));
 
   const run = async () => {
     setBusy(true);
@@ -31,6 +35,7 @@ export default function Consistency() {
     try {
       setReport(await api.checkConsistency(caseId));
       api.findingResolutions(caseId).then(setResolutions).catch(() => setResolutions({}));
+      refreshGate();
     } catch (e) {
       setError(e.message);
     } finally {
@@ -47,6 +52,7 @@ export default function Consistency() {
     try {
       await api.resolveFinding(caseId, f.id, status, j, f.kind);
       setResolutions((m) => ({ ...m, [f.id]: { status, justification: j } }));
+      refreshGate();
     } catch (e) { setError(e.message); }
   };
 
@@ -136,6 +142,19 @@ export default function Consistency() {
             <div className="dam-card dam-muted">All {recon.claims_checked} recomputed figures match the stated values.</div>
           )}
         </>
+      )}
+
+      {gate && (
+        <InlineNotification
+          kind={gate.blocked ? 'error' : 'success'}
+          lowContrast
+          hideCloseButton
+          title={gate.blocked ? 'Board preparation blocked' : 'Cleared for board preparation'}
+          subtitle={gate.blocked
+            ? `${gate.blocking.length} unresolved Critical item(s) must be resolved (or dual-approval override): ${gate.blocking.map((b) => b.kind).join(', ')}`
+            : 'No unresolved Critical items.'}
+          style={{ marginBottom: 'var(--sp-4)' }}
+        />
       )}
 
       {report && (

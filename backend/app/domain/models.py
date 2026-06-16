@@ -172,6 +172,14 @@ class SignoffRequired(Exception):
     """Raised when a stage transition needs a human approver."""
 
 
+class BoardGateBlocked(Exception):
+    """Advance to board preparation blocked by unresolved Critical items (3.7)."""
+
+    def __init__(self, items: list[dict]):
+        self.items = items
+        super().__init__(f"{len(items)} unresolved Critical item(s) block board preparation")
+
+
 class CaseEvent(BaseModel):
     stage: str
     note: str

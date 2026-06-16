@@ -41,6 +41,7 @@ export const api = {
     }).then(json),
   findingResolutions: (caseId) =>
     fetch(`/api/cases/${caseId}/findings/resolutions`).then(json),
+  boardGate: (caseId) => fetch(`/api/cases/${caseId}/board-gate`).then(json),
   reconcile: (caseId) =>
     fetch(`/api/agents/reconcile/${caseId}`, { method: 'POST' }).then(json),
   draftAction: (caseId, paragraphId, action, finalContent) =>

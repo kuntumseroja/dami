@@ -5,6 +5,7 @@ from fastapi.responses import Response
 from app.domain.models import (
     HUMAN_CHECKPOINTS,
     STAGE_SPEC,
+    BoardGateBlocked,
     ConsistencyReport,
     DataClassification,
     DocumentType,
@@ -25,6 +26,7 @@ from app.domain.taxonomy import CONSISTENCY_TYPES, default_severities
 from app.infrastructure.container import Container, get_container
 from app.infrastructure.security import get_current_user, require_roles
 from app.use_cases import manage_case, manage_document
+from app.use_cases.board_gate import unresolved_critical
 from app.use_cases.check_consistency import check_consistency
 from app.use_cases.cover_checklist import build_cover_checklist
 from app.use_cases.metrics import summarize_latency
@@ -117,19 +119,30 @@ async def get_case(
 @router.post("/cases/{case_id}/advance")
 async def advance_case(
     case_id: str,
+    override_by: str | None = Form(None),
     user: User = Depends(get_current_user),
     c: Container = Depends(deps),
 ):
     try:
         case = await manage_case.advance_case(
-            case_id, user, repository=c.repository, audit=c.audit)
+            case_id, user, repository=c.repository, audit=c.audit,
+            override_by=override_by)
     except KeyError:
         raise HTTPException(404, "case not found") from None
     except manage_case.Forbidden as exc:
         raise HTTPException(403, str(exc)) from exc
+    except BoardGateBlocked as exc:
+        raise HTTPException(409, detail={"error": str(exc), "blocking": exc.items}) from exc
     except SignoffRequired as exc:
         raise HTTPException(409, str(exc)) from exc
     return case.model_dump(mode="json")
+
+
+@router.get("/cases/{case_id}/board-gate")
+async def board_gate_status(case_id: str, c: Container = Depends(deps)):
+    """Unresolved Critical items blocking advance to board preparation (3.7)."""
+    items = await unresolved_critical(case_id, repository=c.repository)
+    return {"blocked": bool(items), "blocking": items}
 
 
 @router.post("/cases/{case_id}/risk-tier")
