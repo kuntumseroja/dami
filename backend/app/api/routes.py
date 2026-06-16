@@ -37,6 +37,13 @@ from app.use_cases.resolve_findings import (
     record_resolution,
     summarize_false_positives,
 )
+from app.use_cases.review_queue import (
+    acknowledge_review,
+    get_review_state,
+    reaches_senior_inbox,
+    submit_to_review,
+    summarize_acknowledgment,
+)
 from app.use_cases.draft_nota import draft_nota
 from app.use_cases.draft_review import (
     export_nota_markdown,
@@ -328,6 +335,63 @@ async def export_draft(case_id: str, c: Container = Depends(deps)):
     return Response(content=md, media_type="text/markdown; charset=utf-8", headers={
         "Content-Disposition": f'inline; filename="nota-{case_id}.md"',
     })
+
+
+@router.post("/cases/{case_id}/submit-review")
+async def submit_review(
+    case_id: str,
+    user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
+    c: Container = Depends(deps),
+):
+    """Submit to the senior review queue: auto-runs consistency, awaits ack."""
+    return await submit_to_review(
+        case_id, actor=user.id, router=c.router, embedder=c.embedder,
+        vectors=c.vectors, repository=c.repository, audit=c.audit, reranker=c.reranker)
+
+
+@router.post("/cases/{case_id}/review/acknowledge")
+async def acknowledge_review_route(
+    case_id: str,
+    user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
+    c: Container = Depends(deps),
+):
+    try:
+        return await acknowledge_review(case_id, actor=user.id,
+                                        repository=c.repository, audit=c.audit)
+    except KeyError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@router.get("/cases/{case_id}/review-state")
+async def review_state(case_id: str, c: Container = Depends(deps)):
+    return await get_review_state(case_id, repository=c.repository) or {}
+
+
+@router.get("/review-queue")
+async def senior_review_queue(
+    user: User = Depends(get_current_user),
+    c: Container = Depends(deps),
+):
+    """Files that have reached the senior inbox (submitted + acknowledged)."""
+    scope = None if user.has_role(Role.BPI_OVERSIGHT) else user.entity.value
+    out = []
+    for case in await c.repository.list_all(scope):
+        state = await get_review_state(case.case_id, repository=c.repository)
+        if reaches_senior_inbox(state):
+            out.append({**case.model_dump(mode="json"),
+                        "review": {"critical_count": state.get("critical_count"),
+                                   "findings_count": state.get("findings_count"),
+                                   "ack_by": state.get("ack_by")}})
+    return out
+
+
+@router.get("/metrics/acknowledgment")
+async def acknowledgment_metrics(
+    limit: int = 5000,
+    user: User = Depends(get_current_user),
+    c: Container = Depends(deps),
+):
+    return summarize_acknowledgment(c.audit.read(limit))
 
 
 @router.post("/agents/consistency/{case_id}", response_model=ConsistencyReport)

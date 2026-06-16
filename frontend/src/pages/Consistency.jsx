@@ -25,9 +25,28 @@ export default function Consistency() {
   const [resolutions, setResolutions] = useState({});
   const [justif, setJustif] = useState({});
   const [gate, setGate] = useState(null);
+  const [review, setReview] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const refreshGate = (id = caseId) =>
     api.boardGate(id).then(setGate).catch(() => setGate(null));
+  const refreshReview = (id = caseId) =>
+    api.reviewState(id).then((s) => setReview(s && s.submitted_at ? s : null)).catch(() => setReview(null));
+
+  const submitReview = async () => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.submitReview(caseId);   // auto-runs consistency, queues pending ack
+      setReport(await api.checkConsistency(caseId).catch(() => report));
+      refreshReview(); refreshGate();
+    } catch (e) { setError(e.message); } finally { setSubmitting(false); }
+  };
+
+  const acknowledge = async () => {
+    try { await api.acknowledgeReview(caseId); refreshReview(); }
+    catch (e) { setError(e.message); }
+  };
 
   const run = async () => {
     setBusy(true);
@@ -35,7 +54,7 @@ export default function Consistency() {
     try {
       setReport(await api.checkConsistency(caseId));
       api.findingResolutions(caseId).then(setResolutions).catch(() => setResolutions({}));
-      refreshGate();
+      refreshGate(); refreshReview();
     } catch (e) {
       setError(e.message);
     } finally {
@@ -106,6 +125,28 @@ export default function Consistency() {
           <Button kind="tertiary" renderIcon={Calculator} onClick={reconcile} disabled={!caseId}>
             Reconcile figures
           </Button>
+        )}
+      </div>
+
+      {/* Senior review queue: auto-trigger consistency + acknowledgment gate (3.6) */}
+      <div className="dam-card" style={{ display: 'flex', gap: 'var(--sp-3)', alignItems: 'center', flexWrap: 'wrap' }}>
+        {submitting ? (
+          <InlineLoading description="Submitting & auto-checking…" />
+        ) : (
+          <Button kind="tertiary" onClick={submitReview} disabled={!caseId}>
+            Submit to senior review queue
+          </Button>
+        )}
+        {review && (
+          <>
+            <span className={`dam-pill dam-pill--${review.acknowledged ? 'success' : 'warning'} dam-pill--plain`}>
+              {review.acknowledged ? 'Acknowledged — in senior inbox' : 'Submitted — awaiting acknowledgment'}
+            </span>
+            <span className="dam-meta">{review.findings_count} findings · {review.critical_count} critical</span>
+            {!review.acknowledged && (
+              <Button kind="ghost" size="sm" onClick={acknowledge}>Acknowledge report</Button>
+            )}
+          </>
         )}
       </div>
 

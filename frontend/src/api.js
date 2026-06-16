@@ -42,6 +42,9 @@ export const api = {
   findingResolutions: (caseId) =>
     fetch(`/api/cases/${caseId}/findings/resolutions`).then(json),
   boardGate: (caseId) => fetch(`/api/cases/${caseId}/board-gate`).then(json),
+  submitReview: (caseId) => fetch(`/api/cases/${caseId}/submit-review`, { method: 'POST' }).then(json),
+  acknowledgeReview: (caseId) => fetch(`/api/cases/${caseId}/review/acknowledge`, { method: 'POST' }).then(json),
+  reviewState: (caseId) => fetch(`/api/cases/${caseId}/review-state`).then(json),
   reconcile: (caseId) =>
     fetch(`/api/agents/reconcile/${caseId}`, { method: 'POST' }).then(json),
   draftAction: (caseId, paragraphId, action, finalContent) =>
