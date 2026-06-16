@@ -32,6 +32,17 @@ class InMemoryCaseRepository(CaseRepository):
     async def list_documents(self, case_id: str) -> list[GovernanceDocument]:
         return list(self._documents.get(case_id, []))
 
+    async def get_document(self, doc_id: str) -> GovernanceDocument | None:
+        for docs in self._documents.values():
+            for d in docs:
+                if d.id == doc_id:
+                    return d
+        return None
+
+    async def delete_document(self, doc_id: str) -> None:
+        for case_id, docs in self._documents.items():
+            self._documents[case_id] = [d for d in docs if d.id != doc_id]
+
     async def save_artefact(self, case_id: str, kind: str, payload: dict) -> None:
         self._artefacts.setdefault(case_id, []).append(
             {"kind": kind, "payload": payload, "created_at": utcnow().isoformat()}

@@ -1,5 +1,6 @@
 """Thin HTTP controllers — translate requests to use-case calls, nothing more."""
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import Response
 
 from app.domain.models import (
     ConsistencyReport,
@@ -17,7 +18,7 @@ from app.domain.models import (
 )
 from app.infrastructure.container import Container, get_container
 from app.infrastructure.security import get_current_user, require_roles
-from app.use_cases import manage_case
+from app.use_cases import manage_case, manage_document
 from app.use_cases.check_consistency import check_consistency
 from app.use_cases.draft_nota import draft_nota
 from app.use_cases.ingest_document import ingest_document
@@ -103,6 +104,56 @@ async def set_risk_tier(
 @router.get("/cases/{case_id}/documents")
 async def list_documents(case_id: str, c: Container = Depends(deps)):
     return [d.model_dump(mode="json") for d in await c.repository.list_documents(case_id)]
+
+
+_MEDIA_TYPES = {
+    "pdf": "application/pdf",
+    "txt": "text/plain; charset=utf-8",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+
+
+@router.get("/documents/{doc_id}/file")
+async def document_file(
+    doc_id: str,
+    user: User = Depends(get_current_user),
+    c: Container = Depends(deps),
+):
+    """Stream a document's original file for in-browser preview/download."""
+    doc = await c.repository.get_document(doc_id)
+    if doc is None or not user.can_access_entity(doc.entity):
+        raise HTTPException(404, "document not found")
+    if not doc.storage_key:
+        raise HTTPException(404, "no original file stored for this document")
+    try:
+        data = c.storage.get(doc.storage_key)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(404, "file not found in object storage") from exc
+    ext = (doc.title.rsplit(".", 1)[-1] if "." in doc.title else "").lower()
+    media = _MEDIA_TYPES.get(ext, "application/octet-stream")
+    # inline so PDFs render in the browser viewer rather than downloading
+    return Response(content=data, media_type=media, headers={
+        "Content-Disposition": f'inline; filename="{doc.title}"',
+    })
+
+
+@router.delete("/cases/{case_id}/documents/{doc_id}")
+async def delete_document(
+    case_id: str,
+    doc_id: str,
+    user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
+    c: Container = Depends(deps),
+):
+    """Remove a supplementary document. Master (SOE) submissions are locked."""
+    try:
+        await manage_document.remove_document(
+            case_id, doc_id, actor=user.id, repository=c.repository,
+            vectors=c.vectors, storage=c.storage, audit=c.audit)
+    except KeyError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except manage_document.DocumentLocked as exc:
+        raise HTTPException(409, str(exc)) from exc
+    return {"status": "removed", "document_id": doc_id}
 
 
 @router.get("/cases/{case_id}/artefacts")

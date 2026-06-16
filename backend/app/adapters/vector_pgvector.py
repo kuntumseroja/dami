@@ -62,6 +62,14 @@ class PgVectorStore(VectorStore):
                 )
         return len(chunks)
 
+    async def delete_document(self, document_id: str) -> int:
+        async with self._engine.begin() as conn:
+            result = await conn.execute(
+                text("DELETE FROM doc_chunks WHERE document_id = :doc_id"),
+                {"doc_id": document_id},
+            )
+        return result.rowcount or 0
+
     async def search(self, embedding: list[float], k: int = 8,
                      case_id: str | None = None,
                      doc_types: list[str] | None = None,
@@ -138,6 +146,11 @@ class InMemoryVectorStore(VectorStore):
         self._rows = [(c, e) for c, e in self._rows if c.document_id != doc_id]
         self._rows.extend(zip(chunks, embeddings))
         return len(chunks)
+
+    async def delete_document(self, document_id: str) -> int:
+        before = len(self._rows)
+        self._rows = [(c, e) for c, e in self._rows if c.document_id != document_id]
+        return before - len(self._rows)
 
     async def search(self, embedding: list[float], k: int = 8,
                      case_id: str | None = None,

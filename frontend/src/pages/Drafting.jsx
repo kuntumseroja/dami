@@ -8,7 +8,15 @@ import {
   TextArea,
   TextInput,
 } from '@carbon/react';
-import { MachineLearningModel, Document, DocumentAdd } from '@carbon/icons-react';
+import {
+  MachineLearningModel,
+  Document,
+  DocumentAdd,
+  View,
+  ViewOff,
+  TrashCan,
+  Locked,
+} from '@carbon/icons-react';
 import { api } from '../api';
 
 const STAGE_LABELS = {
@@ -30,6 +38,7 @@ export default function Drafting() {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
+  const [previewId, setPreviewId] = useState(null);
 
   // When opened from an active process, load the case + its already-attached
   // submission documents from the SOE.
@@ -42,17 +51,31 @@ export default function Drafting() {
     if (routeCaseId) { setCaseId(routeCaseId); loadCase(routeCaseId); }
   }, [routeCaseId]);
 
+  // Analyst additions are 'supporting' (non-master) → removable, unlike the
+  // SOE submission package which is locked.
   const attachMore = async (files) => {
     if (!files.length || !caseId) return;
     setUploading(true);
     setError(null);
     try {
-      for (const f of files) await api.ingest(f, 'submission', caseId);
+      for (const f of files) await api.ingest(f, 'supporting', caseId);
       api.listDocuments(caseId).then(setDocs).catch(() => {});
     } catch (e) {
       setError(e.message);
     } finally {
       setUploading(false);
+    }
+  };
+
+  const removeDoc = async (doc) => {
+    if (!window.confirm(`Remove "${doc.title}" from this case?`)) return;
+    setError(null);
+    try {
+      await api.deleteDocument(caseId, doc.id);
+      if (previewId === doc.id) setPreviewId(null);
+      api.listDocuments(caseId).then(setDocs).catch(() => {});
+    } catch (e) {
+      setError(e.message);
     }
   };
 
@@ -122,25 +145,64 @@ export default function Drafting() {
               <Document size={16} /> Documents from submission
             </h3>
             {docs.map((d) => (
-              <div className="dam-doc" key={d.id}>
-                <span className="dam-doc__icon"><Document size={18} /></span>
-                <div>
-                  <div className="dam-doc__name">{d.title}</div>
-                  <div className="dam-doc__meta">
-                    <code>{d.id}</code>
-                    {d.is_master && ' · master'}
+              <div key={d.id}>
+                <div className="dam-doc">
+                  <span className="dam-doc__icon"><Document size={18} /></span>
+                  <div>
+                    <div className="dam-doc__name">{d.title}</div>
+                    <div className="dam-doc__meta">
+                      <code>{d.id}</code>
+                      {d.is_master && ' · master'}
+                    </div>
+                  </div>
+                  <div className="dam-doc__tags">
+                    <span className="dam-pill dam-pill--neutral dam-pill--plain">
+                      {DOCTYPE_LABELS[d.doc_type] || d.doc_type}
+                    </span>
+                    {d.classification && (
+                      <span className="dam-pill dam-pill--warning dam-pill--plain">
+                        {d.classification}
+                      </span>
+                    )}
+                    <Button
+                      kind="ghost"
+                      size="sm"
+                      hasIconOnly
+                      iconDescription={previewId === d.id ? 'Hide preview' : 'Preview'}
+                      tooltipPosition="bottom"
+                      renderIcon={previewId === d.id ? ViewOff : View}
+                      onClick={() => setPreviewId(previewId === d.id ? null : d.id)}
+                    />
+                    {d.is_master ? (
+                      <Button
+                        kind="ghost"
+                        size="sm"
+                        hasIconOnly
+                        disabled
+                        iconDescription="SOE submission — locked"
+                        tooltipPosition="bottom"
+                        renderIcon={Locked}
+                      />
+                    ) : (
+                      <Button
+                        kind="ghost"
+                        size="sm"
+                        hasIconOnly
+                        iconDescription="Remove"
+                        tooltipPosition="bottom"
+                        renderIcon={TrashCan}
+                        onClick={() => removeDoc(d)}
+                      />
+                    )}
                   </div>
                 </div>
-                <div className="dam-doc__tags">
-                  <span className="dam-pill dam-pill--neutral dam-pill--plain">
-                    {DOCTYPE_LABELS[d.doc_type] || d.doc_type}
-                  </span>
-                  {d.classification && (
-                    <span className="dam-pill dam-pill--warning dam-pill--plain">
-                      {d.classification}
-                    </span>
-                  )}
-                </div>
+                {previewId === d.id && (
+                  <iframe
+                    title={`preview-${d.id}`}
+                    src={api.documentFileUrl(d.id)}
+                    className="dam-doc-preview"
+                  />
+                )}
               </div>
             ))}
           </>

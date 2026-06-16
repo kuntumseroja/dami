@@ -60,6 +60,10 @@ class VectorStore(ABC):
                                embeddings: list[list[float]]) -> int: ...
 
     @abstractmethod
+    async def delete_document(self, document_id: str) -> int:
+        """Remove all chunks for a document from the index. Returns count."""
+
+    @abstractmethod
     async def search(self, embedding: list[float], k: int = 8,
                      case_id: str | None = None,
                      doc_types: list[str] | None = None,
@@ -114,6 +118,12 @@ class CaseRepository(ABC):
     async def list_documents(self, case_id: str) -> list[GovernanceDocument]: ...
 
     @abstractmethod
+    async def get_document(self, doc_id: str) -> GovernanceDocument | None: ...
+
+    @abstractmethod
+    async def delete_document(self, doc_id: str) -> None: ...
+
+    @abstractmethod
     async def save_artefact(self, case_id: str, kind: str, payload: dict) -> None: ...
 
     @abstractmethod
@@ -128,6 +138,9 @@ class ObjectStorage(ABC):
 
     @abstractmethod
     def get(self, key: str) -> bytes: ...
+
+    @abstractmethod
+    def delete(self, key: str) -> None: ...
 
 
 class SourceItem(BaseModel):

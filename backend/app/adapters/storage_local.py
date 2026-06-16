@@ -17,3 +17,6 @@ class LocalStorage(ObjectStorage):
 
     def get(self, key: str) -> bytes:
         return (self._root / key).read_bytes()
+
+    def delete(self, key: str) -> None:
+        (self._root / key).unlink(missing_ok=True)

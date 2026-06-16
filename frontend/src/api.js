@@ -13,6 +13,9 @@ export const api = {
   listCases: () => fetch('/api/cases').then(json),
   getCase: (caseId) => fetch(`/api/cases/${caseId}`).then(json),
   listDocuments: (caseId) => fetch(`/api/cases/${caseId}/documents`).then(json),
+  documentFileUrl: (docId) => `/api/documents/${docId}/file`,
+  deleteDocument: (caseId, docId) =>
+    fetch(`/api/cases/${caseId}/documents/${docId}`, { method: 'DELETE' }).then(json),
   createCase: (title) => fetch('/api/cases', { method: 'POST', body: form({ title }) }).then(json),
   advanceCase: (caseId, signoffBy) =>
     fetch(`/api/cases/${caseId}/advance`, { method: 'POST', body: form({ signoff_by: signoffBy }) }).then(json),

@@ -129,6 +129,18 @@ class PostgresCaseRepository(CaseRepository):
             )).fetchall()
         return [GovernanceDocument.model_validate(dict(r._mapping)) for r in rows]
 
+    async def get_document(self, doc_id: str) -> GovernanceDocument | None:
+        async with self._engine.connect() as conn:
+            row = (await conn.execute(
+                text("SELECT * FROM documents WHERE id = :id"), {"id": doc_id},
+            )).fetchone()
+        return GovernanceDocument.model_validate(dict(row._mapping)) if row else None
+
+    async def delete_document(self, doc_id: str) -> None:
+        async with self._engine.begin() as conn:
+            await conn.execute(
+                text("DELETE FROM documents WHERE id = :id"), {"id": doc_id})
+
     async def save_artefact(self, case_id: str, kind: str, payload: dict) -> None:
         async with self._engine.begin() as conn:
             await conn.execute(

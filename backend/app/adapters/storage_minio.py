@@ -30,3 +30,6 @@ class MinioStorage(ObjectStorage):
         finally:
             response.close()
             response.release_conn()
+
+    def delete(self, key: str) -> None:
+        self._client.remove_object(self._bucket, key)
