@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DAM Governance Intelligence — Development Status</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --blue:#0f62fe; --blue-bright:#4589ff; --blue-deep:#0043ce;
+    --blue-40:#78a9ff; --blue-20:#d0e2ff; --blue-10:#edf5ff;
+    --error:#da1e28; --warn:#f1c21b; --success:#24a148; --teal:#007d79; --purple:#8a3ffc;
+    --ink:#161616; --ink-2:#393939; --muted:#525252; --disabled:#8d8d8d;
+    --border:#e0e0e0; --border-soft:#c6c6c6; --surface:#fff; --surface-2:#f4f4f4;
+    --sp1:4px; --sp2:8px; --sp3:12px; --sp4:16px; --sp5:24px; --sp6:32px; --sp7:40px; --sp8:48px; --sp9:64px;
+    --elev1:0 1px 2px rgba(16,24,40,.04),0 1px 3px rgba(16,24,40,.06);
+    --elev2:0 2px 6px rgba(16,24,40,.06),0 4px 12px rgba(16,24,40,.05);
+    --radius:8px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0; font-family:'IBM Plex Sans',sans-serif; color:var(--ink);
+    background:linear-gradient(135deg,#fff 0%,var(--blue-10) 55%,var(--blue-20) 100%);
+    background-attachment:fixed; font-size:16px; line-height:24px;}
+  h1,h2,h3,h4{font-weight:300; margin:0; letter-spacing:0}
+  code,.mono{font-family:'IBM Plex Mono',monospace; font-size:.92em}
+  a{color:var(--blue); text-decoration:none}
+  a:hover{text-decoration:underline; color:var(--blue-bright)}
+
+  header.topbar{position:sticky; top:0; z-index:50; background:var(--ink); color:#fff;
+    height:48px; display:flex; align-items:center; padding:0 var(--sp5); gap:var(--sp4); border-bottom:1px solid #333;}
+  .topbar .brand{font-size:14px; font-weight:600}
+  .topbar .brand span{font-weight:300; color:var(--blue-40)}
+  .topbar nav{margin-left:auto; display:flex; gap:var(--sp1); flex-wrap:wrap}
+  .topbar nav a{color:#c6c6c6; font-size:14px; padding:0 var(--sp3); height:48px; display:flex; align-items:center; border-bottom:2px solid transparent}
+  .topbar nav a:hover{color:#fff; text-decoration:none; border-bottom-color:var(--blue)}
+
+  .wrap{max-width:1184px; margin:0 auto; padding:0 var(--sp5)}
+  section{padding:var(--sp8) 0; border-bottom:1px solid var(--border)}
+  .eyebrow{font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--blue); margin-bottom:var(--sp3)}
+  .sec-title{font-size:36px; line-height:44px; margin-bottom:var(--sp4)}
+  .sec-sub{font-size:18px; line-height:26px; color:var(--muted); max-width:820px; margin-bottom:var(--sp6)}
+
+  .hero{padding:var(--sp9) 0 var(--sp7)}
+  .hero h1{font-size:48px; line-height:56px; margin-bottom:var(--sp4); max-width:920px}
+  .hero h1 b{font-weight:600; color:var(--blue)}
+  .hero p.lead{font-size:20px; line-height:30px; color:var(--ink-2); max-width:760px; margin-bottom:var(--sp6)}
+  .meta-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:var(--sp4); margin-top:var(--sp6)}
+  .meta-grid .k{font-size:12px; font-weight:600; text-transform:uppercase; color:var(--blue); letter-spacing:.03em}
+  .meta-grid .v{font-size:14px; color:var(--ink-2); margin-top:var(--sp1)}
+
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:var(--sp4)}
+  .kpi{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:var(--sp5); box-shadow:var(--elev1)}
+  .kpi .n{font-size:40px; line-height:1; font-weight:300; color:var(--ink)}
+  .kpi .n small{font-size:18px; color:var(--muted)}
+  .kpi .l{font-size:13px; color:var(--muted); margin-top:var(--sp2)}
+  .kpi.accent{border-left:3px solid var(--blue)}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:var(--sp5)}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:var(--sp4)}
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:var(--sp5); box-shadow:var(--elev1)}
+  .card h3{font-size:18px; font-weight:600; margin-bottom:var(--sp2); display:flex; align-items:center; gap:var(--sp2)}
+  .card p{color:var(--ink-2); font-size:14px; line-height:22px; margin:0}
+  .card .tag{font-size:11px}
+
+  .tag{display:inline-flex; align-items:center; gap:6px; padding:2px 10px; border-radius:12px; font-size:12px; font-weight:600}
+  .tag.green{background:#d3f6d3; color:var(--success)} .tag.blue{background:var(--blue-20); color:var(--blue-deep)}
+  .tag.warn{background:#f9e3ba; color:#8a6d1b} .tag.red{background:#ffdbdb; color:var(--error)}
+  .tag.grey{background:var(--surface-2); color:var(--muted)} .tag.purple{background:#efe0ff; color:#6929c4}
+
+  table{width:100%; border-collapse:collapse; font-size:14px; background:var(--surface); border-radius:var(--radius); overflow:hidden; box-shadow:var(--elev1)}
+  th{background:var(--ink); color:#fff; text-align:left; font-weight:500; padding:10px var(--sp4); font-size:13px}
+  td{padding:10px var(--sp4); border-bottom:1px solid var(--border); vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  tr:nth-child(even) td{background:#fafafa}
+  td code{color:var(--blue-deep)}
+
+  .check{display:flex; gap:var(--sp3); padding:var(--sp3) 0; border-bottom:1px solid var(--border); align-items:flex-start}
+  .check:last-child{border-bottom:0}
+  .check .dot{width:20px; height:20px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:600; margin-top:1px}
+  .dot.done{background:var(--success)} .dot.prog{background:var(--warn); color:var(--ink)} .dot.block{background:var(--disabled)} .dot.next{background:var(--blue)}
+  .check .t{font-weight:600; font-size:14px} .check .d{color:var(--muted); font-size:13px}
+
+  .pipeline{display:flex; flex-wrap:wrap; gap:var(--sp2); align-items:center; margin-top:var(--sp4)}
+  .stage{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:var(--sp3) var(--sp4); font-size:13px; box-shadow:var(--elev1)}
+  .stage b{display:block; font-weight:600; font-size:13px}
+  .stage small{color:var(--muted); font-size:11px}
+  .stage.ckpt{border-left:3px solid var(--blue)}
+  .arrow{color:var(--blue-40); font-weight:600}
+
+  .note{background:var(--blue-10); border:1px solid var(--blue-20); border-radius:var(--radius); padding:var(--sp4) var(--sp5); font-size:14px; color:var(--ink-2)}
+  .legend{display:flex; gap:var(--sp5); flex-wrap:wrap; margin-bottom:var(--sp5); font-size:13px; color:var(--muted)}
+  .legend span{display:inline-flex; align-items:center; gap:6px}
+  .sw{width:12px; height:12px; border-radius:3px; display:inline-block}
+
+  footer{padding:var(--sp7) 0; color:var(--muted); font-size:13px}
+  @media(max-width:880px){ .kpis,.meta-grid,.grid2,.grid3{grid-template-columns:1fr 1fr} .sec-title{font-size:28px;line-height:36px} }
+  @media(max-width:560px){ .kpis,.meta-grid,.grid2,.grid3{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">Danantara <span>· DAM Governance Intelligence</span></div>
+  <nav>
+    <a href="#status">Status</a>
+    <a href="#sprints">Sprints</a>
+    <a href="#capabilities">Capabilities</a>
+    <a href="#evidence">Live evidence</a>
+    <a href="#actions">Corporate actions</a>
+    <a href="#roadmap">Roadmap</a>
+    <a href="dam-architecture.html" style="border-left:1px solid #393939">Architecture ↗</a>
+    <a href="dam-agent-flow.html">Agent flow ↗</a>
+    <a href="dam-drafting-showcase.html">Drafting ↗</a>
+  </nav>
+</header>
+
+<!-- HERO -->
+<div class="wrap hero" id="status">
+  <div class="eyebrow">Development Status · 16 June 2026</div>
+  <h1>DAM platform: <b>Phase 1 &amp; 2 delivered</b> — grounded NOTA drafting, deterministic SOP routing, and a 7-stage governance lifecycle, running end-to-end.</h1>
+  <p class="lead">The governance-intelligence platform that helps DAM review and recommend SOE corporate actions is past foundations and RAG maturity. Every descriptive output is source-grounded; every decision is auditable; judgment stays human.</p>
+  <div class="meta-grid">
+    <div><div class="k">Phase</div><div class="v">1 complete · 2 complete (buildable)</div></div>
+    <div><div class="k">Stack</div><div class="v">FastAPI · React + Carbon · Postgres/pgvector · MinIO</div></div>
+    <div><div class="k">Models</div><div class="v">Claude Opus/Sonnet/Haiku + self-host pool</div></div>
+    <div><div class="k">Quality gate</div><div class="v">54 tests green · CI + nightly eval</div></div>
+  </div>
+</div>
+
+<!-- KPI BAND -->
+<section>
+  <div class="wrap">
+    <div class="kpis">
+      <div class="kpi accent"><div class="n">18<small> / 19</small></div><div class="l">Stories shipped (Sprint 1+2) — 1 externally blocked</div></div>
+      <div class="kpi accent"><div class="n">100<small>%</small></div><div class="l">Source-traceability gate on descriptive content</div></div>
+      <div class="kpi accent"><div class="n">54</div><div class="l">Automated tests passing (backend)</div></div>
+      <div class="kpi accent"><div class="n">13</div><div class="l">SOE corporate-action types modelled end-to-end</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- SPRINTS -->
+<section id="sprints">
+  <div class="wrap">
+    <div class="eyebrow">Delivery</div>
+    <h2 class="sec-title">Sprint progress</h2>
+    <p class="sec-sub">Foundations (Sprint 1) and RAG maturity + grounding gate (Sprint 2) are complete. The only open Sprint-2 item is the enterprise embedding model, blocked on Q1/Q2 model approval — its measurement harness is already built and waiting.</p>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--success)"></i> Shipped</span>
+      <span><i class="sw" style="background:var(--warn)"></i> In progress</span>
+      <span><i class="sw" style="background:var(--blue)"></i> Next</span>
+      <span><i class="sw" style="background:var(--disabled)"></i> Blocked / planned</span>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Sprint 1 — Foundations <span class="tag green">8 / 8 ✓</span></h3>
+        <div class="check"><div class="dot done">✓</div><div><div class="t">Clean / hexagonal architecture</div><div class="d">Domain · use-cases · adapters · infra · api; every adapter has an in-memory twin</div></div></div>
+        <div class="check"><div class="dot done">✓</div><div><div class="t">Postgres + MinIO persistence</div><div class="d">Cases, artefacts, chunks restart-safe; originals preserved as evidence</div></div></div>
+        <div class="check"><div class="dot done">✓</div><div><div class="t">AuthN/Z + sign-off identity</div><div class="d">Role gates; sign-off comes from the authenticated user, never the request body</div></div></div>
+        <div class="check"><div class="dot done">✓</div><div><div class="t">Multi-tenancy + data classification seams</div><div class="d">BPIEntity (DAM/DIM/DSI) isolation; public→restricted labels (FR-9, FR-5)</div></div></div>
+        <div class="check"><div class="dot done">✓</div><div><div class="t">CI pipeline</div><div class="d">ruff + pytest + Postgres job + frontend build + token compliance</div></div></div>
+      </div>
+      <div class="card">
+        <h3>Sprint 2 — RAG maturity &amp; grounding <span class="tag green">10 ✓</span> <span class="tag grey">1 blocked</span></h3>
+        <div class="check"><div class="dot done">✓</div><div><div class="t">2.2 Semantic chunking · 2.3 Hybrid retrieval + rerank</div><div class="d">Structure-aware (never splits a clause); dense+sparse RRF; lift quantified</div></div></div>
+        <div class="check"><div class="dot done">✓</div><div><div class="t">2.4 Golden-set eval harness</div><div class="d">21-query bilingual set; hit@5 gate in CI + nightly; hybrid 1.0 vs dense 0.95</div></div></div>
+        <div class="check"><div class="dot done">✓</div><div><div class="t">2.5 Hard grounding gate · 2.6 Coverage metric</div><div class="d">100% traceability; ungrounded content suppressed; per-draft coverage + insufficient-source flags</div></div></div>
+        <div class="check"><div class="dot done">✓</div><div><div class="t">2.7 PRD 7-stage lifecycle · 2.8 Latency SLA</div><div class="d">Stage machine + entry/exit; p50/p95 + breach rate from the audit trail</div></div></div>
+        <div class="check"><div class="dot done">✓</div><div><div class="t">2.9 Multi-model router · 2.10 Docling/Tesseract OCR · 2.11 OneDrive/SharePoint</div><div class="d">Cost-tiered mix + self-host fallback; OCR escalation; Microsoft Graph source</div></div></div>
+        <div class="check"><div class="dot block">⏳</div><div><div class="t">2.1 Enterprise embedding model</div><div class="d">Blocked on Q1/Q2 model approval — behind the Embedder port; eval harness ready to measure the lift</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CAPABILITIES -->
+<section id="capabilities">
+  <div class="wrap">
+    <div class="eyebrow">What works today</div>
+    <h2 class="sec-title">Delivered capabilities</h2>
+    <p class="sec-sub">A reviewer can take an SOE submission package from intake to a grounded draft NOTA, with deterministic routing, cross-document consistency, and a complete audit trail.</p>
+    <div class="grid3">
+      <div class="card"><h3>📄 Document understanding</h3><p>Native PDF/DOCX extraction with native→Granite-Docling→Tesseract OCR escalation for scanned packages. OneDrive/SharePoint ingest via Microsoft Graph.</p></div>
+      <div class="card"><h3>🔎 Grounded RAG</h3><p>Structure-aware chunking + hybrid dense/sparse retrieval with reranking. Bilingual (Bahasa Indonesia + English).</p></div>
+      <div class="card"><h3>✍️ NOTA drafting</h3><p>Descriptive 80% generated &amp; <b>100% source-cited</b>; judgment sections reserved for humans; coverage metric + insufficient-source flags.</p></div>
+      <div class="card"><h3>⚖️ SOP routing</h3><p>Deterministic rule engine selects the SOP, approval level (CEO / Dewan Pengawas / Presiden RI), and risk tier. The AI explains; it never overrides.</p></div>
+      <div class="card"><h3>🔁 Consistency checker</h3><p>Cross-document audit of the artefact set vs the master submission — flags conflicting figures, dates, and stale references.</p></div>
+      <div class="card"><h3>🗂️ Lifecycle &amp; cover sheet</h3><p>PRD 7-stage workflow with human checkpoints; auto-reconciled cover-sheet checklist whose required collateral varies by SOP.</p></div>
+      <div class="card"><h3>🧠 Multi-model router</h3><p>Cost-tiered Claude mix (Haiku→Sonnet→Opus) + self-host pool (Qwen3, DeepSeek-R1, Mistral, Gemma) per task role.</p></div>
+      <div class="card"><h3>🛡️ Audit &amp; explainability</h3><p>Every AI call, fired rule, and transition recorded append-only; latency doubles as the perf record; full provenance per case.</p></div>
+      <div class="card"><h3>🖥️ Carbon UI</h3><p>IBM Carbon dashboard: active processes, needs-attention, document preview, lock/remove, per-draft SLA + coverage.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- LIFECYCLE -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">FR-6</div>
+    <h2 class="sec-title">7-stage governance lifecycle</h2>
+    <p class="sec-sub">Low-risk cases advance automatically; medium/high-risk pause at human checkpoints (▎blue). Each stage has codified entry/exit conditions and an owner.</p>
+    <div class="pipeline">
+      <div class="stage"><b>Submission Intake</b><small>drafter</small></div><span class="arrow">→</span>
+      <div class="stage"><b>Eligibility Check</b><small>rule engine</small></div><span class="arrow">→</span>
+      <div class="stage"><b>NOTA Drafting</b><small>drafter</small></div><span class="arrow">→</span>
+      <div class="stage ckpt"><b>Internal Review</b><small>reviewer · checkpoint</small></div><span class="arrow">→</span>
+      <div class="stage ckpt"><b>Board Preparation</b><small>reviewer · checkpoint</small></div><span class="arrow">→</span>
+      <div class="stage ckpt"><b>Decision</b><small>approver · checkpoint</small></div><span class="arrow">→</span>
+      <div class="stage"><b>Communication Dispatch</b><small>drafter</small></div><span class="arrow">→</span>
+      <div class="stage"><b>Closed</b><small>—</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- LIVE EVIDENCE -->
+<section id="evidence">
+  <div class="wrap">
+    <div class="eyebrow">Proof, not promises</div>
+    <h2 class="sec-title">Live pipeline run</h2>
+    <p class="sec-sub">Full multi-agent pipeline over a real 5-document package — <i>Krakatau Steel Pabrik Baja Lapis Unit 2 expansion</i> (cover sheet · Nota Dinas · feasibility study · legal review · Dekom recommendation). Per-role model mix confirmed.</p>
+    <div class="grid2">
+      <div class="card">
+        <h3>Agent outcomes</h3>
+        <table>
+          <tr><th>Stage</th><th>Model</th><th>Result</th></tr>
+          <tr><td>Extraction</td><td><code>haiku-4-5</code></td><td>capital_expenditure · Rp850 bn · dates ✓</td></tr>
+          <tr><td>Routing</td><td>rules</td><td>SOP-DAM-006 · Dewan Pengawas · high</td></tr>
+          <tr><td>Drafting</td><td><code>sonnet-4-6</code></td><td>5 descriptive cited + 2 judgment empty</td></tr>
+          <tr><td>Consistency</td><td><code>opus-4-8</code></td><td>3 findings across 5 docs</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Quality &amp; performance signals</h3>
+        <div class="check"><div class="dot done">✓</div><div><div class="t">Grounding gate held</div><div class="d">Every descriptive section cited a resolvable source; judgment sections left to humans</div></div></div>
+        <div class="check"><div class="dot done">✓</div><div><div class="t">Draft latency 31.1 s</div><div class="d">Within the 60 s SLA · <code>within_sla: true</code></div></div></div>
+        <div class="check"><div class="dot prog">!</div><div><div class="t">Consistency caught real drift</div><div class="d">Cover-sheet checklist said "legal review pending" while the legal review was actually complete</div></div></div>
+        <div class="check"><div class="dot done">✓</div><div><div class="t">Deterministic routing</div><div class="d">Rp32 T PSN capex → Presiden RI; Rp750 M lease → no approval — reproducible from rules</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CORPORATE ACTIONS -->
+<section id="actions">
+  <div class="wrap">
+    <div class="eyebrow">Coverage</div>
+    <h2 class="sec-title">SOE corporate actions modelled</h2>
+    <p class="sec-sub">Thirteen seeded cases mirror real Indonesian SOE transactions across every delegation tier — each routed deterministically to the correct SOP and approval level.</p>
+    <table>
+      <tr><th>Action</th><th>Example</th><th>SOP</th><th>Approval</th></tr>
+      <tr><td>Divestasi / disposal</td><td>PTPN III — Kebun Sei Meranti</td><td><code>SOP-001</code></td><td>CEO</td></tr>
+      <tr><td>Sewa / lease</td><td>Pelindo — gudang TPK Surabaya</td><td><code>SOP-003</code></td><td>None (below threshold)</td></tr>
+      <tr><td>Penyertaan modal / investment</td><td>InJourney — JV pariwisata</td><td><code>SOP-002</code></td><td>Dewan Pengawas</td></tr>
+      <tr><td>Penerbitan obligasi / debt</td><td>PLN — global bond</td><td><code>SOP-004</code></td><td>Dewan Pengawas</td></tr>
+      <tr><td>Merger / konsolidasi</td><td>Bank Syariah BUMN → BSI</td><td><code>SOP-005</code></td><td>Presiden RI</td></tr>
+      <tr><td>Akuisisi / acquisition</td><td>MIND ID — Freeport stake</td><td><code>SOP-005</code></td><td>Presiden RI</td></tr>
+      <tr><td>Rights issue (HMETD)</td><td>SIG — akuisisi Semen Baturaja</td><td><code>SOP-008</code></td><td>Dewan Pengawas</td></tr>
+      <tr><td>Spin-off / carve-out</td><td>Telkom — Telkomsigma</td><td><code>SOP-005</code></td><td>Dewan Pengawas</td></tr>
+      <tr><td>IPO</td><td>Pertamina Geothermal (PGEO)</td><td><code>SOP-008</code></td><td>Presiden RI</td></tr>
+      <tr><td>Capex / PSN</td><td>Pertamina — kilang Tuban</td><td><code>SOP-006</code></td><td>Presiden RI</td></tr>
+      <tr><td>Write-off · Dissolution</td><td>Pelni vessels · Merpati liquidation</td><td><code>SOP-007 / 009</code></td><td>CEO · Dewan Pengawas</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- QUALITY -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Engineering quality</div>
+    <h2 class="sec-title">Built to be trusted</h2>
+    <div class="grid3">
+      <div class="card"><h3>Rules decide, AI explains</h3><p>Approvals, risk tiers, and SOP selection are deterministic and reproducible. The model writes the explanation, never the verdict.</p></div>
+      <div class="card"><h3>Provider-portable</h3><p>Every external dependency sits behind a port. Claude today; watsonx / AWS / Databricks feasible via config + adapter swap — no core rework.</p></div>
+      <div class="card"><h3>Lean by default</h3><p>OCR and self-host backends are optional, lazily imported extras. The default image stays small; heavy capability is opt-in per deployment.</p></div>
+      <div class="card"><h3>Measured, not asserted</h3><p>Golden-set retrieval eval gates CI; latency SLA + coverage tracked from the audit trail; 54 backend tests.</p></div>
+      <div class="card"><h3>Auditable by construction</h3><p>Append-only trail of every AI call, fired rule, sign-off, and document removal — full provenance per case.</p></div>
+      <div class="card"><h3>Human-in-the-loop</h3><p>Judgment and recommendation sections are never machine-filled; SOE submissions are immutable; sign-off identity is authenticated.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section id="roadmap">
+  <div class="wrap">
+    <div class="eyebrow">What's next</div>
+    <h2 class="sec-title">Roadmap</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3><span class="tag blue">Next</span> Sprint 3 — Drafting depth &amp; review panel</h3>
+        <div class="check"><div class="dot next">→</div><div><div class="t">Template store + paragraph accept / edit / reject</div><div class="d">Reusable NOTA templates; granular reviewer control over each drafted paragraph</div></div></div>
+        <div class="check"><div class="dot next">→</div><div><div class="t">Contamination gate + finding taxonomy</div><div class="d">Block cross-case leakage; 8-type consistency taxonomy with resolution workflow</div></div></div>
+        <div class="check"><div class="dot next">→</div><div><div class="t">Multi-agent NOTA review panel</div><div class="d">MD-role agents (Investment · Risk · Legal · Finance) debate &amp; verify before board prep</div></div></div>
+        <div class="check"><div class="dot next">→</div><div><div class="t">Financial &amp; statistical reconciliation agent</div><div class="d">Deterministic recompute of figures (gain %, IRR, totals) against source numbers</div></div></div>
+      </div>
+      <div class="card">
+        <h3><span class="tag grey">Planned</span> Sprints 4–6 &amp; blocked items</h3>
+        <div class="check"><div class="dot block">⏳</div><div><div class="t">2.1 Enterprise embedding model</div><div class="d">Awaiting Q1/Q2 model approval — port + eval harness ready</div></div></div>
+        <div class="check"><div class="dot block">○</div><div><div class="t">SOP authoring &amp; versioning (S4)</div><div class="d">Versioned decision trees; only approved SOPs active; coverage dashboard</div></div></div>
+        <div class="check"><div class="dot block">○</div><div><div class="t">Workflow orchestration (S4)</div><div class="d">Assignable owners, notifications, parallel streams + merge gates, SLA alerts</div></div></div>
+        <div class="check"><div class="dot block">○</div><div><div class="t">Real-time status dashboard (S5)</div><div class="d">Per-file stage, pending actions, projected completion; SOE-visible tracking</div></div></div>
+      </div>
+    </div>
+    <div class="note" style="margin-top:var(--sp5)">
+      <b>Target outcome:</b> ~30% productivity improvement on governance-document (NOTA) preparation — by eliminating duplicated drafting, suppressing unnecessary routing, and catching cross-document inconsistency before sign-off, while keeping every output grounded and every decision auditable.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    DAM Governance Intelligence Platform · Status as of 16 June 2026 · Phase 1 &amp; 2 delivered ·
+    <a href="dam-architecture.html">Architecture</a> ·
+    <a href="dam-agent-flow.html">Agent flow</a> ·
+    <a href="dam-drafting-showcase.html">Drafting showcase</a>
+  </div>
+</footer>
+</body>
+</html>
