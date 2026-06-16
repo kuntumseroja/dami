@@ -24,6 +24,10 @@ LOW_CONFIDENCE_PLACEHOLDER = (
     "Low confidence — manual input required]"
 )
 
+# Sprint 2.6 — minimum share of descriptive sections that must be grounded for
+# the draft to be considered backed by sufficient source material.
+COVERAGE_TARGET = 0.8
+
 
 def enforce_grounding(
     sections: list[NotaSection], valid_refs: set[str]
@@ -34,16 +38,21 @@ def enforce_grounding(
     actually retrieved for this case — the only refs a section may legitimately
     cite.
     """
-    report = {"checked": 0, "passed": 0, "suppressed": [], "stripped_refs": []}
+    report = {"checked": 0, "passed": 0, "suppressed": [], "stripped_refs": [],
+              "data_unavailable": []}
     out: list[NotaSection] = []
+    descriptive_total = 0
 
     for s in sections:
         if s.kind != "descriptive":
             out.append(s)
             continue
+        descriptive_total += 1
         content = s.content.strip()
         if not content or DATA_UNAVAILABLE_MARKER in content:
-            # empty or honest "data unavailable" — not an ungrounded claim
+            # empty or honest "data unavailable" — not an ungrounded claim, but
+            # it IS a section the sources couldn't support → flag for coverage.
+            report["data_unavailable"].append(s.heading)
             out.append(s)
             continue
 
@@ -62,5 +71,20 @@ def enforce_grounding(
             out.append(s.model_copy(update={
                 "content": LOW_CONFIDENCE_PLACEHOLDER, "sources": [], "grounded": False,
             }))
+
+    # Coverage metric (2.6): share of descriptive sections that are grounded.
+    # Suppressed (no resolvable source) and data-unavailable sections both count
+    # against coverage; they are surfaced as the insufficient-source flags.
+    report["descriptive_total"] = descriptive_total
+    report["grounded"] = report["passed"]
+    report["coverage"] = (
+        round(report["passed"] / descriptive_total, 4) if descriptive_total else 1.0
+    )
+    report["insufficient_sections"] = sorted(
+        set(report["suppressed"]) | set(report["data_unavailable"])
+    )
+    report["sufficient"] = (
+        report["coverage"] >= COVERAGE_TARGET and not report["suppressed"]
+    )
 
     return out, report

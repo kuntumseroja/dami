@@ -118,6 +118,9 @@ async def draft_nota(
         model=llm.model,
         trace_id=trace_id,
         latency_ms=latency_ms,
+        coverage=grounding_report["coverage"],
+        source_sufficient=grounding_report["sufficient"],
+        insufficient_sections=grounding_report["insufficient_sections"],
     )
 
     await repository.save_artefact(request.case_id, "nota_draft",

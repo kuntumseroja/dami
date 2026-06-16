@@ -297,7 +297,21 @@ export default function Drafting() {
                 {draft.latency_ms <= DRAFT_SLA_MS ? ' · within SLA' : ' · over SLA'}
               </span>
             )}
+            {draft.coverage != null && (
+              <span className={`dam-pill dam-pill--${draft.source_sufficient ? 'success' : 'warning'} dam-pill--plain`}>
+                {Math.round(draft.coverage * 100)}% source coverage
+              </span>
+            )}
           </p>
+          {draft.source_sufficient === false && (
+            <InlineNotification
+              kind="warning"
+              lowContrast
+              title="Insufficient source material"
+              subtitle={`Sections needing more documents: ${draft.insufficient_sections.join(', ')}. Attach supporting docs above and regenerate.`}
+              style={{ marginBottom: 'var(--sp-4)' }}
+            />
+          )}
           {draft.sections.map((s) => (
             <div key={s.heading} style={{ marginBottom: '1.5rem' }}>
               <h3 style={{ fontWeight: 400, fontSize: '1.125rem', display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>

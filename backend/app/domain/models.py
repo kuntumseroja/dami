@@ -287,6 +287,9 @@ class NotaDraft(BaseModel):
     generated_at: datetime = Field(default_factory=utcnow)
     trace_id: str
     latency_ms: int | None = None      # wall-clock draft time (SLA, FR-6/2.8)
+    coverage: float | None = None      # share of descriptive sections grounded (2.6)
+    source_sufficient: bool | None = None          # coverage >= target & none suppressed
+    insufficient_sections: list[str] = []          # sections sources couldn't support
 
 
 class DraftRequest(BaseModel):

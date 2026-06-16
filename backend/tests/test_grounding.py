@@ -1,6 +1,8 @@
-"""Hard source-traceability gate (Sprint 2.5, FR-1 AC-1.3)."""
+"""Hard source-traceability gate (Sprint 2.5, FR-1 AC-1.3)
+plus coverage metric + insufficient-source flagging (Sprint 2.6)."""
 from app.domain.models import NotaSection
 from app.use_cases.grounding import (
+    COVERAGE_TARGET,
     LOW_CONFIDENCE_PLACEHOLDER,
     enforce_grounding,
 )
@@ -51,6 +53,31 @@ def test_judgment_sections_untouched():
     s = NotaSection(heading="Rekomendasi", kind="judgment", content="", sources=[])
     out, _ = enforce_grounding([s], VALID)
     assert out[0] == s
+
+
+def test_full_coverage_when_all_sections_grounded():
+    sections = [_desc("A", "x", ["doc_1#0"]), _desc("B", "y", ["doc_2#0"])]
+    _, report = enforce_grounding(sections, VALID)
+    assert report["coverage"] == 1.0
+    assert report["sufficient"] is True
+    assert report["insufficient_sections"] == []
+
+
+def test_coverage_drops_and_flags_insufficient_sources():
+    sections = [
+        _desc("A", "Grounded.", ["doc_1#0"]),          # grounded
+        _desc("B", "Ungrounded.", ["ghost#1"]),         # suppressed
+        _desc("C", "[DATA TIDAK TERSEDIA — lengkapi]", []),  # data unavailable
+        _desc("D", "Also ungrounded.", []),             # suppressed
+    ]
+    _, report = enforce_grounding(sections, VALID)
+    assert report["descriptive_total"] == 4
+    assert report["grounded"] == 1
+    assert report["coverage"] == 0.25
+    assert report["coverage"] < COVERAGE_TARGET
+    assert report["sufficient"] is False
+    # both suppressed and data-unavailable sections are flagged for follow-up
+    assert set(report["insufficient_sections"]) == {"B", "C", "D"}
 
 
 def test_every_rendered_descriptive_section_is_grounded_or_flagged():
