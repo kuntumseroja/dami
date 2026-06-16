@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from app.domain.models import ConsistencyFinding, ConsistencyReport, new_trace_id
 from app.domain.sla import sla_target_ms, within_sla
+from app.domain.taxonomy import normalize_severity
 from app.domain.ports import (
     AuditLog,
     CaseRepository,
@@ -31,17 +32,22 @@ consistency. The submission is the single source of truth; derived artefacts \
 (review notes, board notes, decision documents, communications) must agree \
 with it and with each other.
 
-Flag every:
-- inconsistency: conflicting facts (amounts, dates, names, terms) between documents
-- outdated_reference: citation of a superseded version, regulation, or decision
-- missing_update: a change present in one artefact but not propagated to another
+Classify every finding into exactly one `kind`:
+- numeric_mismatch: conflicting figures/amounts/percentages
+- date_mismatch: conflicting dates
+- entity_name_mismatch: a party/entity name differs across documents
+- stale_version_reference: cites a superseded version, regulation, or decision
+- missing_propagated_update: a change in one artefact not carried into another
+- contradictory_recommendation: artefacts recommend conflicting actions
+- scope_deviation: a derived artefact exceeds or changes the submission's scope
+- structural_omission: a required section/element is missing
+- formatting_inconsistency: cosmetic/formatting only
 
-For each finding quote the exact excerpts from both documents, classify \
-severity (critical = changes the decision; major = misleads a reader; \
-minor = cosmetic), and propose the resolution that aligns with the master \
-submission. Report everything you find, including findings you are uncertain \
-about — a human reviewer filters downstream. If documents are fully \
-consistent, return an empty list."""
+For each finding quote the exact excerpts from both documents, set `severity` to \
+critical (changes the decision), warning (misleads a reader), or informational \
+(cosmetic), and propose the resolution that aligns with the master submission. \
+Report everything you find, including uncertain findings — a human filters \
+downstream. If fully consistent, return an empty list."""
 
 
 async def check_consistency(
@@ -64,15 +70,20 @@ async def check_consistency(
         prompt=(
             f"Document set for case {case_id} "
             f"({len(documents)} documents):\n{format_context(chunks)}\n\n"
-            "Audit the full set for inconsistencies, outdated references, "
-            "and missing updates."
+            "Audit the full set across the consistency taxonomy."
         ),
         output_type=FindingList,
         max_tokens=16000,
     )
+    # Normalize each severity to the configured default for its type when the
+    # model leaves it invalid (taxonomy defaults are config-driven, 3.4).
+    findings = [
+        f.model_copy(update={"severity": normalize_severity(f.kind, f.severity)})
+        for f in result.findings
+    ]
     report = ConsistencyReport(
         case_id=case_id,
-        findings=result.findings,
+        findings=findings,
         documents_compared=documents,
         trace_id=trace_id,
     )
@@ -87,8 +98,8 @@ async def check_consistency(
             "case_id": case_id,
             "model": llm.model,
             "documents_compared": documents,
-            "findings_count": len(result.findings),
-            "findings": [f.model_dump() for f in result.findings],
+            "findings_count": len(findings),
+            "findings": [f.model_dump() for f in findings],
             "latency_ms": latency_ms,
             "sla_ms": sla_target_ms("agent.consistency"),
             "within_sla": within_sla("agent.consistency", latency_ms),

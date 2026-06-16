@@ -20,6 +20,7 @@ from app.domain.models import (
     SignoffRequired,
     User,
 )
+from app.domain.taxonomy import CONSISTENCY_TYPES, default_severities
 from app.infrastructure.container import Container, get_container
 from app.infrastructure.security import get_current_user, require_roles
 from app.use_cases import manage_case, manage_document
@@ -46,6 +47,13 @@ def deps() -> Container:
 
 
 # --- Workflow lifecycle --------------------------------------------------------
+
+@router.get("/consistency/taxonomy")
+async def consistency_taxonomy():
+    """The 8-type consistency taxonomy with configured default severities (3.4)."""
+    defaults = default_severities()
+    return [{"type": t, "default_severity": defaults[t]} for t in CONSISTENCY_TYPES]
+
 
 @router.get("/templates")
 async def list_templates(c: Container = Depends(deps)):

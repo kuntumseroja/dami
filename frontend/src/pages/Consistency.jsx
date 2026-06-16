@@ -8,7 +8,10 @@ import {
 import { Compare, Calculator } from '@carbon/icons-react';
 import { api } from '../api';
 
-const SEVERITY_PILL = { critical: 'error', major: 'warning', minor: 'neutral', info: 'neutral' };
+const SEVERITY_PILL = {
+  critical: 'error', warning: 'warning', informational: 'neutral',
+  major: 'warning', minor: 'neutral', info: 'neutral',   // reconciliation severities
+};
 const idr = (n) => (Math.abs(n) >= 1e9 ? `${(n / 1e9).toFixed(2)} bn` : n.toLocaleString());
 
 export default function Consistency() {
@@ -135,7 +138,7 @@ export default function Consistency() {
             <div key={i} className={`dam-card dam-finding dam-finding--${f.severity}`}>
               <div style={{ display: 'flex', gap: 'var(--sp-2)', marginBottom: 'var(--sp-2)' }}>
                 <span className={`dam-pill dam-pill--${SEVERITY_PILL[f.severity]}`}>{f.severity}</span>
-                <span className="dam-pill dam-pill--neutral dam-pill--plain">{f.kind.replace('_', ' ')}</span>
+                <span className="dam-pill dam-pill--neutral dam-pill--plain">{f.kind.replaceAll('_', ' ')}</span>
               </div>
               <p style={{ marginTop: 0 }}>{f.description}</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-4)' }}>

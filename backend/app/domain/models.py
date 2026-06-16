@@ -383,8 +383,14 @@ class SubmissionFields(BaseModel):
 # --- Consistency ------------------------------------------------------------------
 
 class ConsistencyFinding(BaseModel):
-    severity: Literal["critical", "major", "minor"]
-    kind: Literal["inconsistency", "outdated_reference", "missing_update"]
+    # PRD 8-type taxonomy + Critical/Warning/Informational severities (3.4).
+    severity: Literal["critical", "warning", "informational"]
+    kind: Literal[
+        "numeric_mismatch", "date_mismatch", "entity_name_mismatch",
+        "stale_version_reference", "missing_propagated_update",
+        "contradictory_recommendation", "scope_deviation",
+        "structural_omission", "formatting_inconsistency",
+    ]
     description: str
     document_a: str
     excerpt_a: str

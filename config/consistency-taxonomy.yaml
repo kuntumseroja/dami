@@ -1,0 +1,15 @@
+# Consistency-finding taxonomy (Sprint 3.4, FR-2) — the 8 PRD types (+ formatting)
+# with configurable default severities (critical | warning | informational).
+# Edit a default_severity here to change how a type is graded, with zero code
+# change. The model may still assign a per-instance severity; an invalid one
+# falls back to the default below.
+types:
+  - { type: numeric_mismatch,             default_severity: critical }      # conflicting figures/amounts/percentages
+  - { type: date_mismatch,                default_severity: warning }       # conflicting dates
+  - { type: entity_name_mismatch,         default_severity: warning }       # party/entity name differs across docs
+  - { type: stale_version_reference,      default_severity: warning }       # cites a superseded version/regulation/decision
+  - { type: missing_propagated_update,    default_severity: critical }      # change in one artefact not propagated to another
+  - { type: contradictory_recommendation, default_severity: critical }      # artefacts recommend conflicting actions
+  - { type: scope_deviation,              default_severity: warning }       # derived artefact exceeds/changes the submission scope
+  - { type: structural_omission,          default_severity: warning }       # a required section/element missing
+  - { type: formatting_inconsistency,     default_severity: informational } # cosmetic / formatting only
