@@ -1,10 +1,12 @@
 """Seed the running DAM platform with realistic demo cases + documents.
 
-Creates three SOE corporate-action cases and ingests their submission
+Creates seven SOE corporate-action cases and ingests their submission
 packages (the PDFs/DOCX from generate_samples.py) through the live API, so
-the app has reality-shaped data to demo: an asset disposal (board tier, with
-a planted valuation error), a low-risk lease (automated), and a strategic
-investment (commissioners tier).
+the app has reality-shaped data to demo across the delegation-of-authority
+tiers and action types: asset disposal (with a planted valuation error),
+low-risk lease (automated), equity investment, global bond issuance, M&A
+controlling-stake acquisition, refinery capex / PSN (President tier), and an
+asset write-off.
 
 Prereqs:
   1. backend/.venv/bin/python scripts/generate_samples.py   (makes samples/)
@@ -47,6 +49,32 @@ CASES = [
             ("C1_surat_permohonan_penyertaan_modal.pdf", "submission"),
             ("C2_tesis_investasi.pdf", "submission"),
         ],
+    },
+    {
+        "title": "Penerbitan obligasi global — PLN (debt issuance)",
+        "classification": "confidential",
+        "docs": [
+            ("D1_surat_permohonan_obligasi.pdf", "submission"),
+            ("D2_term_sheet.pdf", "submission"),
+        ],
+    },
+    {
+        "title": "Akuisisi saham pengendali tambang nikel — MIND ID (M&A)",
+        "classification": "restricted",
+        "docs": [("E1_surat_permohonan_akuisisi.pdf", "submission")],
+    },
+    {
+        "title": "Belanja modal kilang Tuban / PSN — Pertamina (capex)",
+        "classification": "confidential",
+        "docs": [
+            ("F1_surat_permohonan_capex.pdf", "submission"),
+            ("F2_ringkasan_proyek.pdf", "submission"),
+        ],
+    },
+    {
+        "title": "Penghapusan aset kapal tua — Pelni (asset write-off)",
+        "classification": "internal",
+        "docs": [("G1_surat_permohonan_penghapusan.pdf", "submission")],
     },
 ]
 

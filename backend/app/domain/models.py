@@ -247,7 +247,9 @@ class SubmissionFields(BaseModel):
     # never has to parse free text.
     request_category: Literal[
         "asset_disposal", "asset_acquisition", "investment",
-        "asset_lease", "asset_utilization", "other",
+        "asset_lease", "asset_utilization",
+        "debt_issuance", "merger_acquisition", "capital_expenditure",
+        "asset_writeoff", "other",
     ] = "other"
     amount_idr: float | None
     counterparty: str | None

@@ -9,10 +9,14 @@ in the sources, return null — never guess. Indonesian and English inputs are \
 both expected.
 
 Also classify the request into `request_category` — one of asset_disposal, \
-asset_acquisition, investment, asset_lease, asset_utilization, or other — so \
-the routing rule engine can select the correct SOP. (e.g. "divestasi"/sale = \
+asset_acquisition, investment, asset_lease, asset_utilization, debt_issuance, \
+merger_acquisition, capital_expenditure, asset_writeoff, or other — so the \
+routing rule engine can select the correct SOP. Examples: "divestasi"/sale = \
 asset_disposal; "penyertaan modal"/equity = investment; "sewa"/lease = \
-asset_lease.)"""
+asset_lease; "penerbitan obligasi"/bond/sukuk/global notes = debt_issuance; \
+"merger"/"akuisisi saham pengendali"/M&A = merger_acquisition; "belanja \
+modal"/CAPEX/project investment = capital_expenditure; "penghapusan \
+aset"/write-off of impaired assets = asset_writeoff."""
 
 
 async def extract_submission_fields(

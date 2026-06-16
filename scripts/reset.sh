@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wipe all demo data and reseed a clean 3-case dataset.
+# Wipe all demo data and reseed a clean 7-case dataset.
 # Truncates the Postgres tables and clears the MinIO bucket (both internal to
 # the compose network), then re-runs the seeder. Docker stack must be up.
 set -uo pipefail

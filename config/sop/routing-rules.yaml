@@ -19,6 +19,22 @@ sops:
     name: Asset Utilization / Leasing
     applies_when:
       request_type: [asset_lease, asset_utilization]
+  - id: SOP-DAM-004
+    name: Capital Markets & Debt Issuance
+    applies_when:
+      request_type: debt_issuance
+  - id: SOP-DAM-005
+    name: Merger, Acquisition & Corporate Restructuring
+    applies_when:
+      request_type: merger_acquisition
+  - id: SOP-DAM-006
+    name: Capital Expenditure / Project Investment
+    applies_when:
+      request_type: capital_expenditure
+  - id: SOP-DAM-007
+    name: Asset Write-off / Impaired Asset Disposal
+    applies_when:
+      request_type: asset_writeoff
   - id: SOP-DAM-999
     name: General Governance Request (fallback)
     applies_when: {}

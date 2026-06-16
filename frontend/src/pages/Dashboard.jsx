@@ -103,7 +103,12 @@ export default function Dashboard() {
       .catch((e) => alert(e.message));
 
   const open = cases.filter((c) => c.stage !== 'closed');
-  const attention = open.filter((c) => c.risk_tier === 'medium' || c.risk_tier === 'high');
+  // "Needs attention" = genuinely blocked at a human checkpoint, i.e. already
+  // past intake (stage beyond submission) and not auto-advancing (low risk).
+  // A freshly-submitted case isn't paused yet — it lives in Active processes.
+  const attention = open.filter(
+    (c) => c.stage !== 'submission' && (c.risk_tier === 'medium' || c.risk_tier === 'high'),
+  );
 
   return (
     <div className="dam-page">

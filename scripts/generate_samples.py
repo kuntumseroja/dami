@@ -1,9 +1,10 @@
 """Generate realistic SOE corporate-action submission packages (NOTA inputs).
 
-Produces PDFs and DOCX into ../samples/ — three cases spanning the
-delegation-of-authority tiers, in Bahasa Indonesia (with English glosses),
-using real Indonesian SOE names and plausible figures. Two deliberate
-defects are planted for the demo:
+Produces PDFs and DOCX into ../samples/ — seven cases spanning the
+delegation-of-authority tiers and corporate-action types (disposal, lease,
+investment, debt issuance, M&A, capex/PSN, write-off), in Bahasa Indonesia
+(with English glosses), using real Indonesian SOE names and plausible
+figures. Two deliberate defects are planted for the demo:
   * a "13% vs 130%" arithmetic error in Case A's valuation annex
     (for the financial reconciliation agent),
   * a date/amount mismatch between Case A's submission and its draft board
@@ -196,9 +197,129 @@ def case_c():
     )
 
 
+# ── Case D — Global bond issuance (debt, Dewan Pengawas tier) ────────────────
+def case_d():
+    pdf(
+        "D1_surat_permohonan_obligasi.pdf",
+        "SURAT PERMOHONAN PERSETUJUAN PENERBITAN OBLIGASI GLOBAL",
+        "Request for Approval of Global Bond Issuance · PT PLN (Persero)",
+        [
+            "Nomor: 205/PLN/KEU/VI/2026 &nbsp;&nbsp; Tanggal: 6 Juni 2026",
+            "<b>Perihal:</b> Permohonan persetujuan penerbitan obligasi global (global notes) "
+            "untuk pembiayaan kembali (refinancing) utang jatuh tempo dan belanja modal "
+            "jaringan transmisi.",
+            "<b>Nilai penerbitan / Issuance size:</b> " + money(4_800_000_000_000) +
+            " (setara USD 300 juta).",
+            "<b>Tenor:</b> 10 tahun. <b>Kupon indikatif:</b> 5,8% per tahun. "
+            "<b>Penjamin emisi:</b> sindikasi bank internasional.",
+            "<b>Penggunaan dana / Use of proceeds:</b> 60% refinancing, 40% belanja modal "
+            "transmisi & gardu induk.",
+            "<b>Dasar:</b> Termasuk kategori penerbitan utang strategis — memerlukan "
+            "persetujuan Dewan Pengawas dan koordinasi dengan Kementerian Keuangan.",
+            "Hormat kami, Direksi PT PLN (Persero).",
+        ],
+    )
+    rows = [
+        ["Parameter", "Nilai / Value"],
+        ["Nilai penerbitan (issuance)", money(4_800_000_000_000)],
+        ["Tenor", "10 tahun"],
+        ["Kupon indikatif (coupon)", "5,8%"],
+        ["Rasio refinancing : capex", "60% : 40%"],
+    ]
+    pdf(
+        "D2_term_sheet.pdf",
+        "RINGKASAN KETENTUAN (TERM SHEET)",
+        "Indicative Term Sheet · Global Notes · PT PLN (Persero)",
+        ["Ketentuan utama penerbitan:", table(rows, [90, 70])],
+    )
+
+
+# ── Case E — Controlling-stake acquisition (M&A, Dewan Pengawas tier) ─────────
+def case_e():
+    pdf(
+        "E1_surat_permohonan_akuisisi.pdf",
+        "SURAT PERMOHONAN PERSETUJUAN AKUISISI SAHAM PENGENDALI",
+        "Request for Approval of Controlling-Stake Acquisition · PT Mineral Industri Indonesia (MIND ID)",
+        [
+            "Nomor: 061/MINDID/MNA/VI/2026 &nbsp;&nbsp; Tanggal: 5 Juni 2026",
+            "<b>Perihal:</b> Permohonan persetujuan akuisisi 51% saham pengendali pada "
+            "PT Nikel Sulawesi Lestari guna mengamankan rantai pasok bahan baku baterai (nikel).",
+            "<b>Nilai transaksi / Deal value:</b> " + money(4_200_000_000_000) +
+            " (empat triliun dua ratus miliar Rupiah).",
+            "<b>Struktur:</b> Akuisisi 51% melalui kombinasi kas dan penerbitan saham baru. "
+            "Target menjadi entitas anak terkonsolidasi.",
+            "<b>Counterparty:</b> Pemegang saham mayoritas eksisting PT Nikel Sulawesi Lestari.",
+            "<b>Dasar strategis:</b> Hilirisasi mineral (downstreaming) sesuai mandat. "
+            "Lintas-klaster M&A — memerlukan persetujuan Dewan Pengawas; tunduk pada "
+            "persetujuan KPPU (merger control).",
+            "Hormat kami, Direksi PT Mineral Industri Indonesia (MIND ID).",
+        ],
+    )
+
+
+# ── Case F — Refinery capex / National Strategic Project (President tier) ─────
+def case_f():
+    pdf(
+        "F1_surat_permohonan_capex.pdf",
+        "SURAT PERMOHONAN PERSETUJUAN BELANJA MODAL (CAPEX)",
+        "Request for Approval of Capital Expenditure · PT Pertamina (Persero)",
+        [
+            "Nomor: 312/PTM/INV/VI/2026 &nbsp;&nbsp; Tanggal: 1 Juni 2026",
+            "<b>Perihal:</b> Permohonan persetujuan belanja modal pembangunan dan perluasan "
+            "kompleks kilang (refinery development) di Tuban, Jawa Timur.",
+            "<b>Nilai proyek / Project value:</b> " + money(32_000_000_000_000) +
+            " (tiga puluh dua triliun Rupiah), multi-tahun.",
+            "<b>Status:</b> Termasuk Proyek Strategis Nasional (PSN). Berdampak fiskal masif — "
+            "memerlukan persetujuan Presiden Republik Indonesia.",
+            "<b>Manfaat:</b> Menambah kapasitas pengolahan 100.000 barel/hari; mengurangi "
+            "impor BBM dan memperkuat ketahanan energi nasional.",
+            "<b>Jangka waktu konstruksi:</b> 48 bulan.",
+            "Hormat kami, Direksi PT Pertamina (Persero).",
+        ],
+    )
+    rows = [
+        ["Parameter", "Nilai / Value"],
+        ["Nilai proyek (project size)", money(32_000_000_000_000)],
+        ["Tambahan kapasitas", "100.000 barel/hari"],
+        ["Status", "Proyek Strategis Nasional (PSN)"],
+        ["Jangka waktu konstruksi", "48 bulan"],
+    ]
+    pdf(
+        "F2_ringkasan_proyek.pdf",
+        "RINGKASAN PROYEK",
+        "Project Summary · Refinery Development Tuban · PT Pertamina (Persero)",
+        ["Parameter utama proyek:", table(rows, [90, 70])],
+    )
+
+
+# ── Case G — Asset write-off (below threshold, CEO tier, automated-leaning) ───
+def case_g():
+    pdf(
+        "G1_surat_permohonan_penghapusan.pdf",
+        "SURAT PERMOHONAN PERSETUJUAN PENGHAPUSAN ASET",
+        "Request for Approval of Asset Write-off · PT Pelayaran Nasional Indonesia (Pelni)",
+        [
+            "Nomor: 089/PELNI/HAPUS/VI/2026 &nbsp;&nbsp; Tanggal: 7 Juni 2026",
+            "<b>Perihal:</b> Permohonan persetujuan penghapusan (write-off) atas 3 unit kapal "
+            "tua yang sudah tidak laik operasi dan habis masa ekonomisnya.",
+            "<b>Nilai buku tersisa / Residual book value:</b> " + money(12_000_000_000) +
+            " (dua belas miliar Rupiah).",
+            "<b>Tindak lanjut:</b> Penghapusan dari neraca diikuti penjualan besi tua (scrap) "
+            "melalui lelang. Estimasi nilai scrap " + money(2_500_000_000) + ".",
+            "<b>Dasar:</b> Nilai di bawah ambang batas strategis — kewenangan persetujuan CEO "
+            "Danantara; tetap dicatat dalam audit trail.",
+            "Hormat kami, Direksi PT Pelayaran Nasional Indonesia (Pelni).",
+        ],
+    )
+
+
 if __name__ == "__main__":
     print("Generating sample SOE corporate-action packages into", OUT)
     case_a()
     case_b()
     case_c()
+    case_d()
+    case_e()
+    case_f()
+    case_g()
     print("Done. Seed them with: backend/.venv/bin/python scripts/seed.py")
