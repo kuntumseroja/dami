@@ -13,6 +13,7 @@ from app.domain.models import (
     IngestionResult,
     FindingResolution,
     NotaDraft,
+    PanelReview,
     ParagraphAction,
     ReconciliationReport,
     RiskTier,
@@ -37,6 +38,7 @@ from app.use_cases.resolve_findings import (
     record_resolution,
     summarize_false_positives,
 )
+from app.use_cases.review_panel import run_review_panel
 from app.use_cases.review_queue import (
     acknowledge_review,
     get_review_state,
@@ -403,6 +405,21 @@ async def agent_consistency(
     return await check_consistency(case_id, router=c.router, embedder=c.embedder,
                                    vectors=c.vectors, repository=c.repository,
                                    audit=c.audit, reranker=c.reranker)
+
+
+@router.post("/agents/review-panel/{case_id}", response_model=PanelReview)
+async def agent_review_panel(
+    case_id: str,
+    user: User = Depends(require_roles(Role.REVIEWER, Role.APPROVER)),
+    c: Container = Depends(deps),
+):
+    """Multi-agent specialist review panel → cited findings + chair adjudication."""
+    try:
+        return await run_review_panel(case_id, router=c.router, embedder=c.embedder,
+                                      vectors=c.vectors, repository=c.repository,
+                                      audit=c.audit, reranker=c.reranker)
+    except KeyError as exc:
+        raise HTTPException(404, str(exc)) from exc
 
 
 @router.post("/agents/reconcile/{case_id}", response_model=ReconciliationReport)

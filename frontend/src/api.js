@@ -61,5 +61,6 @@ export const api = {
       body: JSON.stringify(payload),
     }).then(json),
   runPipeline: (caseId) => fetch(`/api/agents/pipeline/${caseId}`, { method: 'POST' }).then(json),
+  reviewPanel: (caseId) => fetch(`/api/agents/review-panel/${caseId}`, { method: 'POST' }).then(json),
   audit: (limit = 200) => fetch(`/api/audit?limit=${limit}`).then(json),
 };

@@ -485,6 +485,53 @@ class ReconciliationReport(BaseModel):
     generated_at: datetime = Field(default_factory=utcnow)
 
 
+# --- NOTA Review Panel (Sprint 3.10, FR-2 deepens / FR-10 seed) -------------------
+
+class PanelFinding(BaseModel):
+    reviewer_id: str
+    reviewer_title: str = ""
+    dimension: str                          # rubric dimension id (DIM-*)
+    severity: Literal["critical", "major", "minor"]
+    title: str
+    detail: str
+    citation: str = ""                      # resolvable source ref or fired rule id
+    grounded: bool = True                    # passed the citation gate (RVW-003)
+
+
+class ReviewerReport(BaseModel):
+    reviewer_id: str
+    title: str
+    findings: list[PanelFinding] = []
+    confidence: float = 0.0                  # reviewer self-confidence 0..1
+
+
+class DimensionScore(BaseModel):
+    dimension: str
+    severity: Literal["critical", "major", "minor", "ok"]
+    status: str = ""
+
+
+class ChairReport(BaseModel):
+    recommendation: Literal["endorse", "endorse_with_conditions", "return_for_revision"]
+    confidence: float = 0.0
+    summary: str = ""
+    dimension_scores: list[DimensionScore] = []
+    unresolved_issues: list[str] = []        # addendum A6 — needs-human block
+    needs_human_review: bool = True
+
+
+class PanelReview(BaseModel):
+    case_id: str
+    risk_tier: str
+    reviewers: list[ReviewerReport] = []
+    findings: list[PanelFinding] = []        # grounded, deduped
+    dropped_uncited: int = 0                  # findings dropped by the citation gate
+    chair: ChairReport
+    trace_id: str
+    latency_ms: int | None = None
+    generated_at: datetime = Field(default_factory=utcnow)
+
+
 # --- Routing ----------------------------------------------------------------------
 
 class RoutingRequest(BaseModel):
