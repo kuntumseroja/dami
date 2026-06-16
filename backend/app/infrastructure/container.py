@@ -5,6 +5,12 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from app.adapters.audit_jsonl import JsonlAuditLog
+from app.adapters.doc_parser import (
+    DoclingParser,
+    LayeredDocumentParser,
+    NativeTextParser,
+    TesseractParser,
+)
 from app.adapters.embedder_hash import HashEmbedder
 from app.adapters.llm_claude import ClaudeGateway
 from app.adapters.model_router import ConfiguredModelRouter
@@ -16,6 +22,7 @@ from app.adapters.vector_pgvector import InMemoryVectorStore, PgVectorStore
 from app.domain.ports import (
     AuditLog,
     CaseRepository,
+    DocumentParser,
     DocumentSource,
     Embedder,
     LLMGateway,
@@ -38,6 +45,7 @@ class Container:
     repository: CaseRepository
     storage: ObjectStorage
     audit: AuditLog
+    parser: DocumentParser
     doc_source: DocumentSource | None = None
 
     async def init(self) -> None:
@@ -74,6 +82,14 @@ def build_container(settings: Settings | None = None) -> Container:
     else:
         storage = LocalStorage(settings.local_storage_path)
 
+    # Document-understanding pipeline (2.10). Layered adds Docling+Tesseract OCR
+    # escalation; the OCR backends import lazily so this stays cheap to build.
+    if settings.doc_parser == "layered":
+        parser: DocumentParser = LayeredDocumentParser(
+            NativeTextParser(), [DoclingParser(), TesseractParser()])
+    else:
+        parser = NativeTextParser()
+
     doc_source: DocumentSource | None = None
     if settings.doc_source == "graph":
         from app.adapters.source_graph import GraphDocumentSource
@@ -99,6 +115,7 @@ def build_container(settings: Settings | None = None) -> Container:
         repository=repository,
         storage=storage,
         audit=JsonlAuditLog(settings.dam_audit_log_path),
+        parser=parser,
         doc_source=doc_source,
     )
 

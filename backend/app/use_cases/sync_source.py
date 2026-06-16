@@ -14,6 +14,7 @@ from app.domain.models import (
 from app.domain.ports import (
     AuditLog,
     CaseRepository,
+    DocumentParser,
     DocumentSource,
     Embedder,
     ObjectStorage,
@@ -35,6 +36,7 @@ async def sync_from_source(
     storage: ObjectStorage,
     repository: CaseRepository,
     audit: AuditLog,
+    parser: DocumentParser | None = None,
 ) -> dict:
     trace_id = new_trace_id()
     items = await source.list_items(folder)
@@ -44,7 +46,7 @@ async def sync_from_source(
         res = await ingest_document(
             meta.name, data, doc_type, case_id,
             embedder=embedder, vectors=vectors, storage=storage,
-            repository=repository, audit=audit,
+            repository=repository, audit=audit, parser=parser,
             entity=entity, classification=classification,
         )
         results.append({"source_id": item.external_id, "name": meta.name,

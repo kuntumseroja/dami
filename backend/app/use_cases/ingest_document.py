@@ -3,7 +3,6 @@
 Supports PDF, DOCX, and plain-text submissions, SOPs, templates, and
 historical NOTAs.
 """
-import io
 import uuid
 
 from app.domain.models import (
@@ -16,23 +15,21 @@ from app.domain.models import (
     IngestionResult,
     new_trace_id,
 )
-from app.domain.ports import AuditLog, CaseRepository, Embedder, ObjectStorage, VectorStore
+from app.adapters.doc_parser import NativeTextParser
+from app.domain.ports import (
+    AuditLog,
+    CaseRepository,
+    DocumentParser,
+    Embedder,
+    ObjectStorage,
+    VectorStore,
+)
 from app.use_cases.chunking import semantic_chunks
 
 
 def parse_bytes(filename: str, data: bytes) -> str:
-    name = filename.lower()
-    if name.endswith(".pdf"):
-        from pypdf import PdfReader
-
-        reader = PdfReader(io.BytesIO(data))
-        return "\n".join(page.extract_text() or "" for page in reader.pages)
-    if name.endswith(".docx"):
-        import docx
-
-        document = docx.Document(io.BytesIO(data))
-        return "\n".join(p.text for p in document.paragraphs)
-    return data.decode("utf-8", errors="replace")
+    """Back-compat shim — native text extraction only."""
+    return NativeTextParser().parse(filename, data).text
 
 
 def chunk_text(content: str) -> list[str]:
@@ -51,6 +48,7 @@ async def ingest_document(
     storage: ObjectStorage,
     repository: CaseRepository,
     audit: AuditLog,
+    parser: DocumentParser | None = None,
     entity: BPIEntity = DEFAULT_ENTITY,
     classification: DataClassification = DataClassification.INTERNAL,
 ) -> IngestionResult:
@@ -61,9 +59,10 @@ async def ingest_document(
     storage_key = f"{entity.value}/cases/{case_id or 'unassigned'}/{document_id}/{filename}"
     storage.put(storage_key, data)
 
-    # 2. Parse and index for retrieval (chunks carry the tenant scope).
-    content = parse_bytes(filename, data)
-    pieces = chunk_text(content)
+    # 2. Document understanding (2.10): native text → OCR escalation if scanned.
+    parser = parser or NativeTextParser()
+    parsed = parser.parse(filename, data)
+    pieces = chunk_text(parsed.text)
     chunks = [
         Chunk(
             document_id=document_id,
@@ -104,6 +103,9 @@ async def ingest_document(
             "classification": classification.value,
             "storage_key": storage_key,
             "chunks_indexed": indexed,
+            "parse_method": parsed.method,
+            "char_count": parsed.char_count,
+            "ocr_used": parsed.ocr_used,
         },
     )
     return IngestionResult(document_id=document_id, chunks_indexed=indexed,

@@ -9,7 +9,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel
 
-from app.domain.models import Case, Chunk, GovernanceDocument
+from app.domain.models import Case, Chunk, GovernanceDocument, ParsedDocument
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -141,6 +141,16 @@ class ObjectStorage(ABC):
 
     @abstractmethod
     def delete(self, key: str) -> None: ...
+
+
+class DocumentParser(ABC):
+    """Document-understanding pipeline (Sprint 2.10): bytes → text.
+
+    Implementations escalate from native text extraction to layout-aware OCR
+    (Granite-Docling) and a Tesseract fallback for scanned/image documents."""
+
+    @abstractmethod
+    def parse(self, filename: str, data: bytes) -> "ParsedDocument": ...
 
 
 class SourceItem(BaseModel):

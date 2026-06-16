@@ -234,6 +234,14 @@ class DocumentType(str, Enum):
     HISTORICAL_NOTA = "historical_nota"
 
 
+class ParsedDocument(BaseModel):
+    """Output of the document-understanding pipeline (Sprint 2.10)."""
+    text: str
+    method: str               # native | docling | tesseract | empty
+    char_count: int
+    ocr_used: bool = False
+
+
 class GovernanceDocument(BaseModel):
     id: str
     case_id: str | None = None

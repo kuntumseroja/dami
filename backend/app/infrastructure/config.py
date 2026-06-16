@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     # Document source: 'none' (upload only), 'local' (dev twin), or 'graph'
     # (Microsoft 365 — OneDrive today, SharePoint library as the governed target)
     doc_source: Literal["none", "local", "graph"] = "none"
+    # Document-understanding pipeline (2.10): 'native' text-only (default, lean
+    # image) or 'layered' native→Granite-Docling→Tesseract OCR for scanned docs.
+    doc_parser: Literal["native", "layered"] = "native"
 
     database_url: str = "postgresql+asyncpg://dam:dam@localhost:5432/dam_governance"
 

@@ -201,7 +201,7 @@ async def ingest(
     return await ingest_document(
         file.filename or "upload", data, doc_type, case_id,
         embedder=c.embedder, vectors=c.vectors, storage=c.storage,
-        repository=c.repository, audit=c.audit,
+        repository=c.repository, audit=c.audit, parser=c.parser,
         entity=user.entity, classification=classification,
     )
 
@@ -234,7 +234,7 @@ async def source_sync(
         source=c.doc_source, folder=folder, doc_type=doc_type, case_id=case_id,
         entity=user.entity, classification=classification,
         embedder=c.embedder, vectors=c.vectors, storage=c.storage,
-        repository=c.repository, audit=c.audit,
+        repository=c.repository, audit=c.audit, parser=c.parser,
     )
 
 
