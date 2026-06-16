@@ -346,6 +346,57 @@ class ConsistencyReport(BaseModel):
     generated_at: datetime = Field(default_factory=utcnow)
 
 
+# --- Financial & statistical reconciliation (FR-2a, addendum A1, Sprint 3.11) -----
+# The LLM EXTRACTS numeric claims and the arithmetic relationship asserted in the
+# documents; a deterministic calculator RECOMPUTES the result — the model never
+# does the math.
+
+RelationshipType = Literal[
+    "percentage_change",   # (operands[0]-operands[1]) / operands[1] * 100
+    "percentage_of",       # operands[0] / operands[1] * 100
+    "difference",          # operands[0] - operands[1]
+    "sum",                 # sum(operands)
+    "ratio",               # operands[0] / operands[1]
+    "product",             # operands[0] * operands[1]
+]
+
+
+class NumericClaim(BaseModel):
+    """A figure in the documents that asserts an arithmetic relationship."""
+    description: str
+    relationship: RelationshipType
+    operands: list[float]          # the SOURCE numbers, in formula order
+    claimed_result: float          # the result as STATED in the document
+    unit: str | None = None        # "%", "IDR", "x", …
+    source_refs: list[str] = []
+
+
+class ClaimList(BaseModel):
+    claims: list[NumericClaim]
+
+
+class ReconciliationFinding(BaseModel):
+    description: str
+    relationship: str
+    operands: list[float]
+    claimed_result: float
+    recomputed_result: float | None
+    status: Literal["ok", "mismatch", "uncomputable"]
+    severity: Literal["critical", "major", "minor", "info"]
+    source_refs: list[str] = []
+    explanation: str
+
+
+class ReconciliationReport(BaseModel):
+    case_id: str
+    findings: list[ReconciliationFinding]
+    claims_checked: int
+    mismatches: int
+    trace_id: str
+    latency_ms: int | None = None
+    generated_at: datetime = Field(default_factory=utcnow)
+
+
 # --- Routing ----------------------------------------------------------------------
 
 class RoutingRequest(BaseModel):

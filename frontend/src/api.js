@@ -33,6 +33,8 @@ export const api = {
     }).then(json),
   checkConsistency: (caseId) =>
     fetch(`/api/agents/consistency/${caseId}`, { method: 'POST' }).then(json),
+  reconcile: (caseId) =>
+    fetch(`/api/agents/reconcile/${caseId}`, { method: 'POST' }).then(json),
   route: (payload) =>
     fetch('/api/agents/route', {
       method: 'POST',

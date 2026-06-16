@@ -11,6 +11,7 @@ from app.domain.models import (
     DraftRequest,
     IngestionResult,
     NotaDraft,
+    ReconciliationReport,
     RiskTier,
     Role,
     RoutingDecision,
@@ -24,6 +25,7 @@ from app.use_cases import manage_case, manage_document
 from app.use_cases.check_consistency import check_consistency
 from app.use_cases.cover_checklist import build_cover_checklist
 from app.use_cases.metrics import summarize_latency
+from app.use_cases.reconcile_numbers import reconcile_numbers
 from app.use_cases.draft_nota import draft_nota
 from app.use_cases.ingest_document import ingest_document
 from app.use_cases.route_request import route_request
@@ -260,6 +262,18 @@ async def agent_consistency(
     c: Container = Depends(deps),
 ):
     return await check_consistency(case_id, router=c.router, embedder=c.embedder,
+                                   vectors=c.vectors, repository=c.repository,
+                                   audit=c.audit, reranker=c.reranker)
+
+
+@router.post("/agents/reconcile/{case_id}", response_model=ReconciliationReport)
+async def agent_reconcile(
+    case_id: str,
+    user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
+    c: Container = Depends(deps),
+):
+    """Deterministic financial/statistical reconciliation of the case's figures."""
+    return await reconcile_numbers(case_id, router=c.router, embedder=c.embedder,
                                    vectors=c.vectors, repository=c.repository,
                                    audit=c.audit, reranker=c.reranker)
 
