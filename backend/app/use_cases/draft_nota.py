@@ -26,6 +26,7 @@ from app.domain.ports import (
 )
 from app.domain.sla import sla_target_ms, within_sla
 from app.domain.models import TemplateSection
+from app.use_cases.contamination import enforce_judgment_purity
 from app.use_cases.cover_checklist import _resolve_sop
 from app.use_cases.grounding import DATA_UNAVAILABLE_MARKER, enforce_grounding
 from app.use_cases.retrieval import format_context, retrieve
@@ -138,12 +139,23 @@ async def draft_nota(
 
     sections = [
         NotaSection(heading=s.heading, kind="descriptive", content=s.content,
-                    sources=s.source_refs)
+                    sources=s.source_refs, authored_by="ai")
         for s in drafted.sections
     ] + [
-        NotaSection(heading=s.heading, kind="judgment", content="", sources=[])
+        NotaSection(heading=s.heading, kind="judgment", content="", sources=[],
+                    authored_by=None)
         for s in template.judgment
     ]
+
+    # Judgment-section contamination zero-gate (3.3, AC-1.4): no AI text may land
+    # in a human-only judgment section — blank any that did, raise Sev-1.
+    sections, contamination = enforce_judgment_purity(sections)
+    if contamination:
+        audit.log("incident.contamination", trace_id, {
+            "case_id": request.case_id, "severity": "sev1",
+            "sections": contamination,
+            "detail": "AI-authored content removed from judgment section(s)",
+        })
 
     # Hard source-traceability gate (FR-1, AC-1.3): no descriptive content is
     # rendered unless it cites a source ref that actually resolves to a chunk
@@ -170,6 +182,7 @@ async def draft_nota(
         template_id=template.id,
         mandatory_missing=mandatory_missing,
         complete=complete,
+        contamination_incidents=contamination,
     )
 
     await repository.save_artefact(request.case_id, "nota_draft",

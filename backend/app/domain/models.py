@@ -285,6 +285,7 @@ class NotaSection(BaseModel):
     content: str = ""           # AI fills descriptive; judgment left to humans
     sources: list[str] = []     # chunk refs grounding this section
     grounded: bool = True       # set by the grounding gate — false = suppressed/placeholder
+    authored_by: Literal["ai", "human"] | None = None   # provenance (3.3 contamination gate)
 
 
 # Persistent AI-mistake disclaimer (addendum A4) — attached to every AI artifact
@@ -339,6 +340,7 @@ class NotaDraft(BaseModel):
     mandatory_missing: list[str] = []              # mandatory sections not satisfied (A3)
     complete: bool = True                          # no mandatory section unfilled/invented
     disclaimer: str = AI_DISCLAIMER                # persistent AI-mistake disclaimer (A4)
+    contamination_incidents: list[str] = []        # judgment sections AI tried to fill (3.3)
 
 
 # --- Paragraph-level review actions (Sprint 3.2, FR-1 AC-1.5) ---------------------

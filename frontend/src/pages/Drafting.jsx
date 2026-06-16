@@ -418,11 +418,36 @@ export default function Drafting() {
                     );
                   })()}
                 </>
-              ) : (
-                <div className="dam-section-judgment">
-                  Reserved for reviewer analysis and recommendation.
-                </div>
-              )}
+              ) : (() => {
+                const a = actions[s.heading];
+                const isEditing = editing[s.heading] !== undefined;
+                if (isEditing) {
+                  return (
+                    <>
+                      <TextArea id={`jedit-${s.heading}`} labelText="Your analysis (human-authored)"
+                        value={editing[s.heading]}
+                        onChange={(e) => setEditing((m) => ({ ...m, [s.heading]: e.target.value }))} />
+                      <div style={{ display: 'flex', gap: 'var(--sp-2)', marginTop: 'var(--sp-2)' }}>
+                        <Button size="sm" renderIcon={Checkmark}
+                          onClick={() => act(s.heading, 'edit', editing[s.heading])}>Save</Button>
+                        <Button size="sm" kind="ghost" renderIcon={Close}
+                          onClick={() => setEditing((m) => { const n = { ...m }; delete n[s.heading]; return n; })}>Cancel</Button>
+                      </div>
+                    </>
+                  );
+                }
+                return (
+                  <div className="dam-section-judgment">
+                    {a?.action === 'edit' && a.final_content
+                      ? <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{a.final_content}</p>
+                      : <p style={{ margin: 0 }}>✍️ Analysis &amp; recommendation must be authored by a human reviewer — the AI never fills this section.</p>}
+                    <Button size="sm" kind="ghost" renderIcon={Edit} style={{ marginTop: 'var(--sp-2)' }}
+                      onClick={() => setEditing((m) => ({ ...m, [s.heading]: a?.final_content || '' }))}>
+                      {a?.final_content ? 'Edit analysis' : 'Write analysis'}
+                    </Button>
+                  </div>
+                );
+              })()}
             </div>
           ))}
         </div>
