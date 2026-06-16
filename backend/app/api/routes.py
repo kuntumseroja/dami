@@ -11,6 +11,7 @@ from app.domain.models import (
     DraftRequest,
     IngestionResult,
     NotaDraft,
+    ParagraphAction,
     ReconciliationReport,
     RiskTier,
     Role,
@@ -27,6 +28,11 @@ from app.use_cases.cover_checklist import build_cover_checklist
 from app.use_cases.metrics import summarize_latency
 from app.use_cases.reconcile_numbers import reconcile_numbers
 from app.use_cases.draft_nota import draft_nota
+from app.use_cases.draft_review import (
+    export_nota_markdown,
+    get_action_state,
+    record_paragraph_action,
+)
 from app.use_cases.ingest_document import ingest_document
 from app.use_cases.route_request import route_request
 from app.use_cases.run_pipeline import run_case_pipeline
@@ -259,6 +265,41 @@ async def agent_draft(
     return await draft_nota(request, router=c.router, embedder=c.embedder,
                             vectors=c.vectors, repository=c.repository, audit=c.audit,
                             reranker=c.reranker, templates=c.templates)
+
+
+@router.post("/cases/{case_id}/draft/actions")
+async def record_draft_action(
+    case_id: str,
+    paragraph_id: str = Form(...),
+    action: str = Form(...),
+    final_content: str = Form(""),
+    user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
+    c: Container = Depends(deps),
+):
+    """Record a paragraph-level accept / edit / reject (tracked + audited)."""
+    if action not in ("accept", "edit", "reject"):
+        raise HTTPException(422, "action must be accept | edit | reject")
+    rec = ParagraphAction(case_id=case_id, paragraph_id=paragraph_id, action=action,
+                          final_content=final_content, actor=user.id)
+    await record_paragraph_action(rec, repository=c.repository, audit=c.audit)
+    return rec.model_dump(mode="json")
+
+
+@router.get("/cases/{case_id}/draft/actions")
+async def draft_action_state(case_id: str, c: Container = Depends(deps)):
+    return await get_action_state(case_id, repository=c.repository)
+
+
+@router.get("/cases/{case_id}/draft/export")
+async def export_draft(case_id: str, c: Container = Depends(deps)):
+    """Reviewed NOTA as Markdown, with the persistent AI disclaimer (A4)."""
+    try:
+        md = await export_nota_markdown(case_id, repository=c.repository)
+    except KeyError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    return Response(content=md, media_type="text/markdown; charset=utf-8", headers={
+        "Content-Disposition": f'inline; filename="nota-{case_id}.md"',
+    })
 
 
 @router.post("/agents/consistency/{case_id}", response_model=ConsistencyReport)

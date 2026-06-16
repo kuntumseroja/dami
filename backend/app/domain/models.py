@@ -287,6 +287,18 @@ class NotaSection(BaseModel):
     grounded: bool = True       # set by the grounding gate — false = suppressed/placeholder
 
 
+# Persistent AI-mistake disclaimer (addendum A4) — attached to every AI artifact
+# in-app and on export, and audited.
+AI_DISCLAIMER = (
+    "Konten deskriptif ini dibantu AI dan wajib bersumber pada dokumen yang "
+    "dikutip; analisis, pertimbangan, dan rekomendasi adalah penilaian manusia. "
+    "AI dapat keliru — verifikasi terhadap sumber sebelum sign-off. / "
+    "This descriptive content is AI-assisted and grounded in the cited sources; "
+    "analysis and recommendations are human judgment. AI can make mistakes — "
+    "verify against sources before sign-off."
+)
+
+
 # --- NOTA templates (Sprint 3.1, addendum A3/A5) ---------------------------------
 
 class TemplateSection(BaseModel):
@@ -326,6 +338,19 @@ class NotaDraft(BaseModel):
     template_id: str | None = None                 # template used (3.1)
     mandatory_missing: list[str] = []              # mandatory sections not satisfied (A3)
     complete: bool = True                          # no mandatory section unfilled/invented
+    disclaimer: str = AI_DISCLAIMER                # persistent AI-mistake disclaimer (A4)
+
+
+# --- Paragraph-level review actions (Sprint 3.2, FR-1 AC-1.5) ---------------------
+
+class ParagraphAction(BaseModel):
+    """A discrete, tracked reviewer action on one drafted paragraph/section."""
+    case_id: str
+    paragraph_id: str                              # stable id — the section heading
+    action: Literal["accept", "edit", "reject"]
+    final_content: str = ""                        # edited text (edit); else echoes original
+    actor: str = ""
+    at: datetime = Field(default_factory=utcnow)
 
 
 class DraftRequest(BaseModel):

@@ -21,6 +21,10 @@ import {
   CheckmarkFilled,
   WarningAltFilled,
   Subtract,
+  Edit,
+  Checkmark,
+  Close,
+  Download,
 } from '@carbon/icons-react';
 import { api } from '../api';
 
@@ -52,6 +56,16 @@ export default function Drafting() {
   const [previewId, setPreviewId] = useState(null);
   const [templates, setTemplates] = useState([]);
   const [templateId, setTemplateId] = useState('');   // '' = auto (by SOP)
+  const [actions, setActions] = useState({});          // paragraph_id -> action record
+  const [editing, setEditing] = useState({});          // paragraph_id -> draft edit text
+
+  const act = async (paragraphId, action, finalContent) => {
+    try {
+      await api.draftAction(caseId, paragraphId, action, finalContent);
+      setActions((m) => ({ ...m, [paragraphId]: { action, final_content: finalContent || '' } }));
+      if (action !== 'edit') setEditing((m) => { const n = { ...m }; delete n[paragraphId]; return n; });
+    } catch (e) { setError(e.message); }
+  };
 
   useEffect(() => { api.listTemplates().then(setTemplates).catch(() => setTemplates([])); }, []);
 
@@ -106,6 +120,7 @@ export default function Drafting() {
     setError(null);
     try {
       setDraft(await api.draft(caseId, instructions || null, templateId || null));
+      api.draftActionState(caseId).then(setActions).catch(() => setActions({}));
     } catch (e) {
       setError(e.message);
     } finally {
@@ -326,6 +341,16 @@ export default function Drafting() {
               </span>
             )}
           </p>
+          {draft.disclaimer && (
+            <InlineNotification kind="info" lowContrast hideCloseButton
+              title="AI-assisted" subtitle={draft.disclaimer}
+              style={{ marginBottom: 'var(--sp-4)', maxWidth: '100%' }} />
+          )}
+          <Button kind="tertiary" size="sm" renderIcon={Download}
+            href={api.draftExportUrl(caseId)} target="_blank"
+            style={{ marginBottom: 'var(--sp-4)' }}>
+            Export reviewed NOTA (.md)
+          </Button>
           {draft.mandatory_missing && draft.mandatory_missing.length > 0 && (
             <InlineNotification
               kind="error"
@@ -354,12 +379,44 @@ export default function Drafting() {
               </h3>
               {s.kind === 'descriptive' ? (
                 <>
-                  <p style={{ whiteSpace: 'pre-wrap' }}>{s.content}</p>
-                  {s.sources.length > 0 && (
-                    <p className="dam-meta">
-                      Sources: {s.sources.map((src) => <code key={src}>{src} </code>)}
-                    </p>
-                  )}
+                  {(() => {
+                    const a = actions[s.heading];
+                    const isEditing = editing[s.heading] !== undefined;
+                    const shown = a?.action === 'edit' ? a.final_content : s.content;
+                    if (isEditing) {
+                      return (
+                        <>
+                          <TextArea id={`edit-${s.heading}`} labelText="Edit paragraph"
+                            value={editing[s.heading]}
+                            onChange={(e) => setEditing((m) => ({ ...m, [s.heading]: e.target.value }))} />
+                          <div style={{ display: 'flex', gap: 'var(--sp-2)', marginTop: 'var(--sp-2)' }}>
+                            <Button size="sm" renderIcon={Checkmark}
+                              onClick={() => act(s.heading, 'edit', editing[s.heading])}>Save edit</Button>
+                            <Button size="sm" kind="ghost" renderIcon={Close}
+                              onClick={() => setEditing((m) => { const n = { ...m }; delete n[s.heading]; return n; })}>Cancel</Button>
+                          </div>
+                        </>
+                      );
+                    }
+                    return (
+                      <>
+                        <p style={{ whiteSpace: 'pre-wrap', opacity: a?.action === 'reject' ? 0.45 : 1,
+                          textDecoration: a?.action === 'reject' ? 'line-through' : 'none' }}>{shown}</p>
+                        {s.sources.length > 0 && (
+                          <p className="dam-meta">Sources: {s.sources.map((src) => <code key={src}>{src} </code>)}</p>
+                        )}
+                        <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center' }}>
+                          <Button size="sm" kind={a?.action === 'accept' ? 'primary' : 'ghost'}
+                            renderIcon={CheckmarkFilled} onClick={() => act(s.heading, 'accept', s.content)}>Accept</Button>
+                          <Button size="sm" kind="ghost" renderIcon={Edit}
+                            onClick={() => setEditing((m) => ({ ...m, [s.heading]: shown }))}>Edit</Button>
+                          <Button size="sm" kind="ghost" renderIcon={TrashCan}
+                            onClick={() => act(s.heading, 'reject', '')}>Reject</Button>
+                          {a && <span className={`dam-pill dam-pill--${a.action === 'reject' ? 'error' : a.action === 'edit' ? 'warning' : 'success'} dam-pill--plain`}>{a.action}ed</span>}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </>
               ) : (
                 <div className="dam-section-judgment">

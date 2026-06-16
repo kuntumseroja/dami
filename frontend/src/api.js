@@ -36,6 +36,13 @@ export const api = {
     fetch(`/api/agents/consistency/${caseId}`, { method: 'POST' }).then(json),
   reconcile: (caseId) =>
     fetch(`/api/agents/reconcile/${caseId}`, { method: 'POST' }).then(json),
+  draftAction: (caseId, paragraphId, action, finalContent) =>
+    fetch(`/api/cases/${caseId}/draft/actions`, {
+      method: 'POST',
+      body: form({ paragraph_id: paragraphId, action, final_content: finalContent || '' }),
+    }).then(json),
+  draftActionState: (caseId) => fetch(`/api/cases/${caseId}/draft/actions`).then(json),
+  draftExportUrl: (caseId) => `/api/cases/${caseId}/draft/export`,
   route: (payload) =>
     fetch('/api/agents/route', {
       method: 'POST',
