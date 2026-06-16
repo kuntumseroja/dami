@@ -34,6 +34,7 @@ CASES = [
         "title": "Divestasi Kebun Sei Meranti — PTPN III (asset disposal)",
         "classification": "confidential",
         "docs": [
+            ("A0_lembar_pengantar.pdf", "cover_sheet"),
             ("A1_surat_permohonan_divestasi.pdf", "submission"),
             ("A2_lampiran_valuasi.pdf", "submission"),
             ("A3_draf_nota_dinas.docx", "review_note"),
@@ -42,12 +43,16 @@ CASES = [
     {
         "title": "Sewa gudang TPK Surabaya — Pelindo (asset lease, low-risk)",
         "classification": "internal",
-        "docs": [("B1_surat_permohonan_sewa.pdf", "submission")],
+        "docs": [
+            ("B0_lembar_pengantar.pdf", "cover_sheet"),
+            ("B1_surat_permohonan_sewa.pdf", "submission"),
+        ],
     },
     {
         "title": "Penyertaan modal JV pariwisata — InJourney (investment)",
         "classification": "restricted",
         "docs": [
+            ("C0_lembar_pengantar.pdf", "cover_sheet"),
             ("C1_surat_permohonan_penyertaan_modal.pdf", "submission"),
             ("C2_tesis_investasi.pdf", "submission"),
         ],
@@ -56,6 +61,7 @@ CASES = [
         "title": "Penerbitan obligasi global — PLN (debt issuance)",
         "classification": "confidential",
         "docs": [
+            ("D0_lembar_pengantar.pdf", "cover_sheet"),
             ("D1_surat_permohonan_obligasi.pdf", "submission"),
             ("D2_term_sheet.pdf", "submission"),
         ],
@@ -63,12 +69,16 @@ CASES = [
     {
         "title": "Akuisisi saham pengendali tambang nikel — MIND ID (M&A)",
         "classification": "restricted",
-        "docs": [("E1_surat_permohonan_akuisisi.pdf", "submission")],
+        "docs": [
+            ("E0_lembar_pengantar.pdf", "cover_sheet"),
+            ("E1_surat_permohonan_akuisisi.pdf", "submission"),
+        ],
     },
     {
         "title": "Belanja modal kilang Tuban / PSN — Pertamina (capex)",
         "classification": "confidential",
         "docs": [
+            ("F0_lembar_pengantar.pdf", "cover_sheet"),
             ("F1_surat_permohonan_capex.pdf", "submission"),
             ("F2_ringkasan_proyek.pdf", "submission"),
         ],
@@ -76,37 +86,58 @@ CASES = [
     {
         "title": "Penghapusan aset kapal tua — Pelni (asset write-off)",
         "classification": "internal",
-        "docs": [("G1_surat_permohonan_penghapusan.pdf", "submission")],
+        "docs": [
+            ("G0_lembar_pengantar.pdf", "cover_sheet"),
+            ("G1_surat_permohonan_penghapusan.pdf", "submission"),
+        ],
     },
     {
         "title": "Merger bank syariah BUMN → BSI — konsolidasi (merger)",
         "classification": "restricted",
-        "docs": [("H1_surat_permohonan_merger.pdf", "submission")],
+        "docs": [
+            ("H0_lembar_pengantar.pdf", "cover_sheet"),
+            ("H1_surat_permohonan_merger.pdf", "submission"),
+        ],
     },
     {
         "title": "Akuisisi saham pengendali Freeport — MIND ID (acquisition)",
         "classification": "restricted",
-        "docs": [("I1_surat_permohonan_akuisisi_freeport.pdf", "submission")],
+        "docs": [
+            ("I0_lembar_pengantar.pdf", "cover_sheet"),
+            ("I1_surat_permohonan_akuisisi_freeport.pdf", "submission"),
+        ],
     },
     {
         "title": "Rights issue akuisisi Semen Baturaja — SIG (rights issue)",
         "classification": "confidential",
-        "docs": [("J1_surat_permohonan_rights_issue.pdf", "submission")],
+        "docs": [
+            ("J0_lembar_pengantar.pdf", "cover_sheet"),
+            ("J1_surat_permohonan_rights_issue.pdf", "submission"),
+        ],
     },
     {
         "title": "Spin-off pusat data Telkomsigma — Telkom (spin-off)",
         "classification": "confidential",
-        "docs": [("K1_surat_permohonan_spinoff.pdf", "submission")],
+        "docs": [
+            ("K0_lembar_pengantar.pdf", "cover_sheet"),
+            ("K1_surat_permohonan_spinoff.pdf", "submission"),
+        ],
     },
     {
         "title": "IPO panas bumi di BEI — Pertamina Geothermal (IPO)",
         "classification": "confidential",
-        "docs": [("L1_surat_permohonan_ipo.pdf", "submission")],
+        "docs": [
+            ("L0_lembar_pengantar.pdf", "cover_sheet"),
+            ("L1_surat_permohonan_ipo.pdf", "submission"),
+        ],
     },
     {
         "title": "Pembubaran perseroan non-operasi — Merpati (dissolution)",
         "classification": "restricted",
-        "docs": [("M1_surat_permohonan_pembubaran.pdf", "submission")],
+        "docs": [
+            ("M0_lembar_pengantar.pdf", "cover_sheet"),
+            ("M1_surat_permohonan_pembubaran.pdf", "submission"),
+        ],
     },
 ]
 

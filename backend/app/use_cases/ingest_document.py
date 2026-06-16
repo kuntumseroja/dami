@@ -87,7 +87,7 @@ async def ingest_document(
             classification=classification,
             doc_type=doc_type,
             title=filename,
-            is_master=doc_type == DocumentType.SUBMISSION,
+            is_master=doc_type in (DocumentType.SUBMISSION, DocumentType.COVER_SHEET),
             storage_key=storage_key,
         )
     )

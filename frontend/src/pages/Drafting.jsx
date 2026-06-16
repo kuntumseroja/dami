@@ -24,7 +24,8 @@ const STAGE_LABELS = {
   decision: 'Decision', communication: 'Communication', closed: 'Closed',
 };
 const DOCTYPE_LABELS = {
-  submission: 'Submission', review_note: 'Review note', board_note: 'Board note',
+  cover_sheet: 'Cover sheet', submission: 'Submission', supporting: 'Supporting',
+  review_note: 'Review note', board_note: 'Board note',
   decision: 'Decision', communication: 'Communication',
 };
 

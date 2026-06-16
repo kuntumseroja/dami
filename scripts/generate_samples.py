@@ -444,9 +444,114 @@ def case_m():
     )
 
 
+# ── Standardized NOTA cover sheets (PRD addendum: mandatory fields + disclaimer) ─
+# One per case. Bilingual mandatory-field table + completeness checklist + the
+# mandatory AI-assistance disclaimer + human sign-off blocks (left blank — the
+# judgment/approval is recorded by people, never pre-filled by the system).
+APPROVAL_LABEL = {
+    "none": "Tidak memerlukan persetujuan (di bawah ambang batas) / Not required",
+    "ceo": "CEO Danantara (Level 1)",
+    "dewan_pengawas": "Dewan Pengawas (Level 2)",
+    "president": "Presiden Republik Indonesia (Level 3)",
+}
+
+# (filename, ref, requesting_unit, cluster, action, value, classification, sop, approval)
+COVERS = [
+    ("A0_lembar_pengantar.pdf", "042/PTPN-III/DIV/VI/2026", "PT Perkebunan Nusantara III (Persero)",
+     "Perkebunan", "Divestasi aset / Asset disposal", 420_000_000_000, "Confidential / Rahasia",
+     "SOP-DAM-001", "ceo"),
+    ("B0_lembar_pengantar.pdf", "118/PELINDO/SEWA/VI/2026", "PT Pelabuhan Indonesia (Persero)",
+     "Logistik", "Sewa aset / Asset lease", 750_000_000, "Internal", "SOP-DAM-003", "none"),
+    ("C0_lembar_pengantar.pdf", "077/INJOURNEY/PMN/VI/2026", "PT Aviasi Pariwisata Indonesia (InJourney)",
+     "Pariwisata", "Penyertaan modal / Equity investment", 1_200_000_000_000, "Restricted / Terbatas",
+     "SOP-DAM-002", "dewan_pengawas"),
+    ("D0_lembar_pengantar.pdf", "205/PLN/KEU/VI/2026", "PT PLN (Persero)",
+     "Energi", "Penerbitan obligasi global / Debt issuance", 4_800_000_000_000, "Confidential / Rahasia",
+     "SOP-DAM-004", "dewan_pengawas"),
+    ("E0_lembar_pengantar.pdf", "061/MINDID/MNA/VI/2026", "PT Mineral Industri Indonesia (MIND ID)",
+     "Mineral & Batu Bara", "Akuisisi saham pengendali / Acquisition", 4_200_000_000_000,
+     "Restricted / Terbatas", "SOP-DAM-005", "dewan_pengawas"),
+    ("F0_lembar_pengantar.pdf", "312/PTM/INV/VI/2026", "PT Pertamina (Persero)",
+     "Energi", "Belanja modal (PSN) / Capital expenditure", 32_000_000_000_000, "Confidential / Rahasia",
+     "SOP-DAM-006", "president"),
+    ("G0_lembar_pengantar.pdf", "089/PELNI/HAPUS/VI/2026", "PT Pelayaran Nasional Indonesia (Pelni)",
+     "Logistik", "Penghapusan aset / Asset write-off", 12_000_000_000, "Internal", "SOP-DAM-007", "ceo"),
+    ("H0_lembar_pengantar.pdf", "003/DANA/MRG/VI/2026", "Komite Konsolidasi Bank Syariah BUMN",
+     "Jasa Keuangan", "Merger / konsolidasi / Merger", 240_000_000_000_000, "Restricted / Terbatas",
+     "SOP-DAM-005", "president"),
+    ("I0_lembar_pengantar.pdf", "071/MINDID/MNA/VI/2026", "PT Mineral Industri Indonesia (MIND ID)",
+     "Mineral & Batu Bara", "Akuisisi saham pengendali / Acquisition", 56_000_000_000_000,
+     "Restricted / Terbatas", "SOP-DAM-005", "president"),
+    ("J0_lembar_pengantar.pdf", "145/SIG/HMETD/VI/2026", "PT Semen Indonesia (Persero) Tbk",
+     "Industri & Manufaktur", "Rights issue (HMETD)", 3_800_000_000_000, "Confidential / Rahasia",
+     "SOP-DAM-008", "dewan_pengawas"),
+    ("K0_lembar_pengantar.pdf", "222/TLKM/SPO/VI/2026", "PT Telkom Indonesia (Persero) Tbk",
+     "Telekomunikasi & Media", "Spin-off unit usaha / Spin-off", 4_500_000_000_000,
+     "Confidential / Rahasia", "SOP-DAM-005", "dewan_pengawas"),
+    ("L0_lembar_pengantar.pdf", "058/PGE/IPO/VI/2026", "PT Pertamina Geothermal Energy Tbk",
+     "Energi", "Penawaran umum perdana (IPO)", 9_000_000_000_000, "Confidential / Rahasia",
+     "SOP-DAM-008", "president"),
+    ("M0_lembar_pengantar.pdf", "011/MNA/LIK/VI/2026", "Tim Restrukturisasi Portofolio BUMN",
+     "Logistik", "Pembubaran / likuidasi / Dissolution", 1_200_000_000_000, "Restricted / Terbatas",
+     "SOP-DAM-009", "dewan_pengawas"),
+]
+
+DISCLAIMER = (
+    "<b>Disclaimer:</b> Bagian deskriptif NOTA ini dapat disusun dengan bantuan "
+    "kecerdasan buatan (AI-assisted) dan wajib bersumber pada dokumen yang "
+    "tercantum (source-grounded). Seluruh pertimbangan, analisis, dan "
+    "rekomendasi merupakan penilaian manusia. Persetujuan dan tanda tangan di "
+    "bawah ini sah hanya bila dibubuhkan oleh pejabat berwenang. / The "
+    "descriptive sections may be AI-assisted and must be grounded in the listed "
+    "sources; all judgment and recommendations are human; sign-offs are valid "
+    "only when affixed by the authorized officer."
+)
+
+
+def cover_sheet(spec):
+    fname, ref, unit, cluster, action, value, classification, sop, approval = spec
+    fields = [
+        ["Field", "Value"],
+        ["Nomor NOTA / Reference", ref],
+        ["BPI / Holding", "Danantara Asset Management (DAM)"],
+        ["Unit pengusul / Requesting unit", unit],
+        ["Klaster / Cluster", cluster],
+        ["Jenis aksi korporasi / Action type", action],
+        ["Nilai transaksi / Transaction value", money(value)],
+        ["Klasifikasi data / Classification", classification],
+        ["SOP terkait / Applicable SOP", sop],
+        ["Level persetujuan / Approval level", APPROVAL_LABEL[approval]],
+    ]
+    checklist = [
+        ["Kelengkapan dokumen / Completeness checklist", "Status"],
+        ["Surat permohonan / Request letter", "Terlampir / Attached"],
+        ["Dokumen pendukung (valuasi, term sheet, dll.)", "Terlampir / Attached"],
+        ["Kajian hukum / Legal review", "Menunggu reviewer / Pending"],
+        ["Kajian risiko / Risk assessment", "Menunggu reviewer / Pending"],
+    ]
+    pdf(
+        fname,
+        "LEMBAR PENGANTAR NOTA — NOTA COVER SHEET",
+        "Danantara Asset Management (DAM) · Governance Intake",
+        [
+            "Lembar pengantar ini merangkum data wajib (mandatory fields) atas "
+            "permohonan aksi korporasi berikut:",
+            table(fields, [75, 95]),
+            "<b>Daftar periksa kelengkapan / Completeness checklist:</b>",
+            table(checklist, [110, 60]),
+            DISCLAIMER,
+            "<b>Tanda tangan / Sign-off:</b> Penyusun (Drafter): ____________  ·  "
+            "Pemeriksa (Reviewer): ____________  ·  Pemberi persetujuan (Approver): "
+            "____________",
+        ],
+    )
+
+
 if __name__ == "__main__":
     print("Generating sample SOE corporate-action packages into", OUT)
     for fn in (case_a, case_b, case_c, case_d, case_e, case_f, case_g,
                case_h, case_i, case_j, case_k, case_l, case_m):
         fn()
+    for spec in COVERS:
+        cover_sheet(spec)
     print("Done. Seed them with: backend/.venv/bin/python scripts/seed.py")

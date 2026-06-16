@@ -170,6 +170,7 @@ class Case(BaseModel):
 
 class DocumentType(str, Enum):
     SUBMISSION = "submission"
+    COVER_SHEET = "cover_sheet"        # standardized NOTA cover sheet (master)
     SUPPORTING = "supporting"          # analyst-attached supplementary material (non-master)
     REVIEW_NOTE = "review_note"
     BOARD_NOTE = "board_note"
