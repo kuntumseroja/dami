@@ -119,7 +119,10 @@ code, pre {
   box-shadow: var(--elev-1);
 }
 
-.dam-card--accent { border-left: 3px solid var(--ibm-blue); }
+.dam-card--accent {
+  background: linear-gradient(180deg, var(--tint-brand) 0%, var(--bg-card) 80px);
+  border-color: var(--border-subtle, var(--ibm-border));
+}
 
 .dam-metric { font: var(--type-h2); color: var(--ibm-text-primary); line-height: 1; }
 .dam-metric-label { color: var(--ibm-text-muted); font: var(--type-link); margin-top: var(--sp-2); }
@@ -130,15 +133,14 @@ code, pre {
   align-items: center;
   gap: var(--sp-4);
   padding: var(--sp-4) var(--sp-5);
-  background: var(--bg-card);
+  background: var(--tint-warn);
   border: 1px solid var(--ibm-border);
-  border-left: 3px solid var(--ibm-warning);
   border-radius: var(--radius-card);
   box-shadow: var(--elev-1);
 }
 .dam-alert + .dam-alert { margin-top: var(--sp-3); }
-.dam-alert--info { border-left-color: var(--ibm-blue); }
-.dam-alert--critical { border-left-color: var(--ibm-error); }
+.dam-alert--info { background: var(--tint-info); }
+.dam-alert--critical { background: var(--tint-error); }
 .dam-alert__icon { flex-shrink: 0; color: var(--ibm-warning); display: flex; }
 .dam-alert--info .dam-alert__icon { color: var(--ibm-blue); }
 .dam-alert--critical .dam-alert__icon { color: var(--ibm-error); }
@@ -243,9 +245,8 @@ code, pre {
   align-items: center;
   gap: var(--sp-4);
   padding: var(--sp-4) var(--sp-5);
-  background: var(--bg-card);
+  background: linear-gradient(180deg, var(--tint-brand) 0%, var(--bg-card) 72px);
   border: 1px solid var(--ibm-border);
-  border-left: 3px solid var(--ibm-blue);
   border-radius: var(--radius-card);
   box-shadow: var(--elev-1);
   margin-bottom: var(--sp-4);
@@ -253,11 +254,10 @@ code, pre {
 .dam-summary__value { font: var(--type-h2); line-height: 1; color: var(--ibm-text-primary); }
 .dam-summary__label { color: var(--ibm-text-muted); font: var(--type-link); }
 
-/* Finding card: severity shown as a left accent rail. */
-.dam-finding { border-left: 3px solid var(--ibm-border-soft); }
-.dam-finding--critical { border-left-color: var(--ibm-error); }
-.dam-finding--major { border-left-color: var(--ibm-warning); }
-.dam-finding--minor { border-left-color: var(--ibm-border-soft); }
+/* Finding card: severity shown as a soft tinted surface (no hard rail). */
+.dam-finding--critical { background: var(--tint-error); }
+.dam-finding--major { background: var(--tint-warn); }
+.dam-finding--minor { background: var(--bg-card); }
 
 /* -- Two-column footer: activity feed + stats panel ---------------------- */
 .dam-split {
@@ -316,9 +316,8 @@ code, pre {
   gap: var(--sp-4);
   flex-wrap: wrap;
   padding: var(--sp-4) var(--sp-5);
-  background: var(--bg-card);
+  background: linear-gradient(180deg, var(--tint-brand) 0%, var(--bg-card) 100%);
   border: 1px solid var(--ibm-border);
-  border-left: 3px solid var(--ibm-blue);
   border-radius: var(--radius-card);
   box-shadow: var(--elev-1);
   margin-bottom: var(--sp-4);
@@ -375,19 +374,25 @@ code, pre {
   gap: var(--sp-4);
 }
 .dam-sop {
+  position: relative;
   background: var(--bg-card);
   border: 1px solid var(--ibm-border);
-  border-left: 3px solid var(--ibm-blue);
   border-radius: var(--radius-card);
   padding: var(--sp-4) var(--sp-5);
   box-shadow: var(--elev-1);
   cursor: pointer;
-  transition: box-shadow 120ms ease, transform 120ms ease;
+  transition: box-shadow 140ms ease, transform 140ms ease, border-color 140ms ease;
 }
-.dam-sop:hover { box-shadow: var(--elev-2); transform: translateY(-2px); }
+.dam-sop:hover { box-shadow: var(--elev-2); transform: translateY(-2px); border-color: var(--ibm-blue-light); }
 .dam-sop:focus-visible { outline: 2px solid var(--ibm-blue); outline-offset: 2px; }
-.dam-sop--draft { border-left-color: var(--ibm-warning); opacity: 0.92; }
+.dam-sop--draft { border-style: dashed; background: var(--tint-warn); }
 .dam-sop__head { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+/* leading status dot replaces the old left rail */
+.dam-sop__head::before {
+  content: ''; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--ibm-success); flex-shrink: 0;
+}
+.dam-sop--draft .dam-sop__head::before { background: var(--ibm-warning); }
 .dam-sop__id { font: var(--type-label); font-weight: 600; color: var(--ibm-blue-deep); font-family: 'IBM Plex Mono', monospace; }
 .dam-sop__ver { margin-left: auto; color: var(--ibm-text-muted); font: var(--type-label); }
 .dam-sop__name { font: var(--type-h5); margin-bottom: var(--sp-1); }

@@ -45,6 +45,13 @@
   --bg-card: #ffffff;            // raised cards/tiles
   --bg-hover: #eef1f6;           // row / list hover
 
+  // -- Soft status tints (sleek tinted surfaces, no hard rails) -----------
+  --tint-brand: #f2f7ff;
+  --tint-info: #f1f6ff;
+  --tint-warn: #fff8e8;
+  --tint-error: #fff2f2;
+  --tint-success: #eefaf1;
+
   // -- Spacing scale (8px base; only these values) -------------------------
   --sp-1: 4px;
   --sp-2: 8px;
