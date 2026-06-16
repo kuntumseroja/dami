@@ -5,7 +5,7 @@ import json
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from app.domain.models import Case, GovernanceDocument, utcnow
+from app.domain.models import Case, GovernanceDocument, coerce_stage, utcnow
 from app.domain.ports import CaseRepository
 
 DDL = """
@@ -177,4 +177,7 @@ class PostgresCaseRepository(CaseRepository):
         data = dict(row._mapping)
         if isinstance(data.get("history"), str):
             data["history"] = json.loads(data["history"])
+        # Migrate legacy 6-stage values onto the PRD 7-stage lifecycle.
+        if data.get("stage"):
+            data["stage"] = coerce_stage(data["stage"])
         return Case.model_validate(data)

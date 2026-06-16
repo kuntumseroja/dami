@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 
 from app.domain.models import (
+    HUMAN_CHECKPOINTS,
+    STAGE_SPEC,
     ConsistencyReport,
     DataClassification,
     DocumentType,
@@ -32,6 +34,19 @@ router = APIRouter(prefix="/api")
 
 def deps() -> Container:
     return get_container()
+
+
+# --- Workflow lifecycle --------------------------------------------------------
+
+@router.get("/workflow/stages")
+async def workflow_stages():
+    """The PRD 7-stage governance lifecycle: ordered stages with entry/exit
+    conditions, owner role, and whether the stage exit is a human checkpoint."""
+    checkpoints = {s.value for s in HUMAN_CHECKPOINTS}
+    return [
+        {**spec, "order": i, "checkpoint": spec["key"] in checkpoints}
+        for i, spec in enumerate(STAGE_SPEC)
+    ]
 
 
 # --- Cases / workflow -----------------------------------------------------------

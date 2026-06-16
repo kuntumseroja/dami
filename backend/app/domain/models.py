@@ -88,11 +88,14 @@ class User(BaseModel):
 # --- Workflow ------------------------------------------------------------------
 
 class WorkflowStage(str, Enum):
-    SUBMISSION = "submission"
-    EVALUATION = "evaluation"
-    BOARD = "board"
+    # PRD 7-stage governance lifecycle (FR-6) + terminal CLOSED.
+    SUBMISSION_INTAKE = "submission_intake"
+    ELIGIBILITY_CHECK = "eligibility_check"
+    NOTA_DRAFTING = "nota_drafting"
+    INTERNAL_REVIEW = "internal_review"
+    BOARD_PREPARATION = "board_preparation"
     DECISION = "decision"
-    COMMUNICATION = "communication"
+    COMMUNICATION_DISPATCH = "communication_dispatch"
     CLOSED = "closed"
 
 
@@ -103,16 +106,66 @@ class RiskTier(str, Enum):
 
 
 STAGE_ORDER = [
-    WorkflowStage.SUBMISSION,
-    WorkflowStage.EVALUATION,
-    WorkflowStage.BOARD,
+    WorkflowStage.SUBMISSION_INTAKE,
+    WorkflowStage.ELIGIBILITY_CHECK,
+    WorkflowStage.NOTA_DRAFTING,
+    WorkflowStage.INTERNAL_REVIEW,
+    WorkflowStage.BOARD_PREPARATION,
     WorkflowStage.DECISION,
-    WorkflowStage.COMMUNICATION,
+    WorkflowStage.COMMUNICATION_DISPATCH,
     WorkflowStage.CLOSED,
 ]
 
-# Stages that need an explicit human sign-off for non-low-risk cases.
-HUMAN_CHECKPOINTS = {WorkflowStage.EVALUATION, WorkflowStage.BOARD, WorkflowStage.DECISION}
+# Stages whose EXIT needs an explicit human sign-off for non-low-risk cases.
+HUMAN_CHECKPOINTS = {
+    WorkflowStage.INTERNAL_REVIEW,
+    WorkflowStage.BOARD_PREPARATION,
+    WorkflowStage.DECISION,
+}
+
+# Entry/exit conditions + owner per stage (FR-6). Surfaced via /api/workflow/stages
+# and rendered in the UI; the descriptive contract for each lifecycle step.
+STAGE_SPEC = [
+    {"key": "submission_intake", "label": "Submission Intake", "owner": "drafter",
+     "entry": "SOE submits the request package to DAM",
+     "exit": "Mandatory documents present (cover sheet + request letter)"},
+    {"key": "eligibility_check", "label": "Eligibility Check", "owner": "rule_engine",
+     "entry": "Intake package received",
+     "exit": "SOP routed; risk tier and approval level determined"},
+    {"key": "nota_drafting", "label": "NOTA Drafting", "owner": "drafter",
+     "entry": "Routing decided",
+     "exit": "Descriptive sections drafted and 100% source-grounded"},
+    {"key": "internal_review", "label": "Internal Review", "owner": "reviewer",
+     "entry": "Draft ready",
+     "exit": "Cross-document consistency clean; reviewer sign-off"},
+    {"key": "board_preparation", "label": "Board Preparation", "owner": "reviewer",
+     "entry": "Internal review passed",
+     "exit": "No unresolved Critical items; committee pack assembled"},
+    {"key": "decision", "label": "Decision", "owner": "approver",
+     "entry": "Committee pack ready",
+     "exit": "Approval recorded at required level (CEO / Dewan Pengawas / President)"},
+    {"key": "communication_dispatch", "label": "Communication Dispatch", "owner": "drafter",
+     "entry": "Decision recorded",
+     "exit": "Decision communicated to the SOE; artefacts archived"},
+    {"key": "closed", "label": "Closed", "owner": "—",
+     "entry": "Communication dispatched", "exit": "—"},
+]
+
+# Migration: map legacy 6-stage values onto the PRD 7-stage lifecycle so
+# pre-existing case rows load cleanly.
+LEGACY_STAGE_MAP = {
+    "submission": "submission_intake",
+    "evaluation": "internal_review",
+    "board": "board_preparation",
+    "decision": "decision",
+    "communication": "communication_dispatch",
+    "closed": "closed",
+}
+
+
+def coerce_stage(value: str) -> str:
+    """Translate a possibly-legacy stage string to the current vocabulary."""
+    return LEGACY_STAGE_MAP.get(value, value)
 
 
 class SignoffRequired(Exception):
@@ -130,7 +183,7 @@ class Case(BaseModel):
     case_id: str
     title: str
     entity: BPIEntity = DEFAULT_ENTITY   # tenant scope (Phase 2 FR-9 seam)
-    stage: WorkflowStage = WorkflowStage.SUBMISSION
+    stage: WorkflowStage = WorkflowStage.SUBMISSION_INTAKE
     risk_tier: RiskTier = RiskTier.MEDIUM
     history: list[CaseEvent] = []
     created_at: datetime = Field(default_factory=utcnow)

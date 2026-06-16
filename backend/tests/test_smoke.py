@@ -51,17 +51,42 @@ def test_checkpoint_requires_approver_role(client):
     case = client.post("/api/cases", data={"title": "Test case"}, headers=DRAFTER).json()
     case_id = case["case_id"]
 
-    # submission → evaluation: no checkpoint
-    assert client.post(f"/api/cases/{case_id}/advance", headers=DRAFTER).status_code == 200
-    # evaluation is a human checkpoint for medium-risk: reviewer alone is not enough
+    # intake → eligibility_check → nota_drafting → internal_review: no checkpoints
+    for _ in range(3):
+        assert client.post(f"/api/cases/{case_id}/advance", headers=DRAFTER).status_code == 200
+    assert client.get(f"/api/cases/{case_id}", headers=DRAFTER).json()["stage"] == "internal_review"
+
+    # internal_review is a human checkpoint for medium-risk: reviewer is not enough
     denied = client.post(f"/api/cases/{case_id}/advance", headers=REVIEWER)
     assert denied.status_code == 403
     # approver advances, and the sign-off identity is the authenticated user
     ok = client.post(f"/api/cases/{case_id}/advance", headers=APPROVER)
     assert ok.status_code == 200
     body = ok.json()
-    assert body["stage"] == "board"
+    assert body["stage"] == "board_preparation"
     assert body["history"][-1]["actor"] == "user-approver"
+
+
+def test_workflow_stages_endpoint_lists_seven_plus_closed(client):
+    stages = client.get("/api/workflow/stages").json()
+    keys = [s["key"] for s in stages]
+    assert keys == [
+        "submission_intake", "eligibility_check", "nota_drafting", "internal_review",
+        "board_preparation", "decision", "communication_dispatch", "closed",
+    ]
+    # every stage carries entry/exit conditions + an owner
+    assert all(s["entry"] and s["exit"] and s["owner"] for s in stages)
+    # the three human checkpoints are flagged
+    assert {s["key"] for s in stages if s["checkpoint"]} == {
+        "internal_review", "board_preparation", "decision"}
+
+
+def test_legacy_stage_migration():
+    from app.domain.models import coerce_stage
+    assert coerce_stage("evaluation") == "internal_review"
+    assert coerce_stage("board") == "board_preparation"
+    assert coerce_stage("communication") == "communication_dispatch"
+    assert coerce_stage("nota_drafting") == "nota_drafting"   # already current
 
 
 def test_ingestion_stores_original_and_registers_document(client, tmp_path):

@@ -23,8 +23,10 @@ import {
 import { api } from '../api';
 
 const STAGE_LABELS = {
-  submission: 'Submission', evaluation: 'Evaluation', board: 'Board',
-  decision: 'Decision', communication: 'Communication', closed: 'Closed',
+  submission_intake: 'Submission Intake', eligibility_check: 'Eligibility Check',
+  nota_drafting: 'NOTA Drafting', internal_review: 'Internal Review',
+  board_preparation: 'Board Preparation', decision: 'Decision',
+  communication_dispatch: 'Communication Dispatch', closed: 'Closed',
 };
 const DOCTYPE_LABELS = {
   cover_sheet: 'Cover sheet', submission: 'Submission', supporting: 'Supporting',

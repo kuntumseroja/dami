@@ -14,14 +14,19 @@ import {
 } from '@carbon/icons-react';
 import { api } from '../api';
 
-// Workflow lifecycle in order; index drives the progress dots.
-const STAGES = ['submission', 'evaluation', 'board', 'decision', 'communication', 'closed'];
+// PRD 7-stage workflow lifecycle (+ closed); index drives the progress dots.
+const STAGES = [
+  'submission_intake', 'eligibility_check', 'nota_drafting', 'internal_review',
+  'board_preparation', 'decision', 'communication_dispatch', 'closed',
+];
 const STAGE_LABELS = {
-  submission: 'Submission',
-  evaluation: 'Evaluation',
-  board: 'Board',
+  submission_intake: 'Submission Intake',
+  eligibility_check: 'Eligibility Check',
+  nota_drafting: 'NOTA Drafting',
+  internal_review: 'Internal Review',
+  board_preparation: 'Board Preparation',
   decision: 'Decision',
-  communication: 'Communication',
+  communication_dispatch: 'Communication Dispatch',
   closed: 'Closed',
 };
 
@@ -107,7 +112,7 @@ export default function Dashboard() {
   // past intake (stage beyond submission) and not auto-advancing (low risk).
   // A freshly-submitted case isn't paused yet — it lives in Active processes.
   const attention = open.filter(
-    (c) => c.stage !== 'submission' && (c.risk_tier === 'medium' || c.risk_tier === 'high'),
+    (c) => c.stage !== 'submission_intake' && (c.risk_tier === 'medium' || c.risk_tier === 'high'),
   );
 
   return (
