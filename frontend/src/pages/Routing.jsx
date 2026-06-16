@@ -43,6 +43,7 @@ export default function Routing() {
   const [error, setError] = useState(null);
   const [sops, setSops] = useState([]);
   const [coverage, setCoverage] = useState(null);
+  const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
     api.sops().then(setSops).catch(() => setSops([]));
@@ -150,27 +151,71 @@ export default function Routing() {
         <h2 className="dam-section__title">SOP catalogue</h2>
         {coverage && (
           <span className="dam-section__meta">
-            {coverage.served}/{coverage.total} categories covered by an approved SOP
-            ({Math.round(coverage.coverage * 100)}%)
+            {coverage.served}/{coverage.total} request categories covered by an approved SOP
+            · {Math.round(coverage.coverage * 100)}%
           </span>
         )}
       </div>
-      <table>
-        <tr><th>SOP</th><th>Name</th><th>Owner</th><th>Ver</th><th>Status</th></tr>
-        {sops.map((s) => (
-          <tr key={s.id}>
-            <td><code>{s.id}</code></td>
-            <td>{s.name}</td>
-            <td className="dam-meta">{s.owner}</td>
-            <td>v{s.version}</td>
-            <td>
-              <span className={`dam-pill dam-pill--${s.active ? 'success' : 'warning'} dam-pill--plain`}>
-                {s.status}{!s.active && s.status === 'approved' ? ' (future)' : ''}
-              </span>
-            </td>
-          </tr>
-        ))}
-      </table>
+      <div className="dam-sop-grid">
+        {sops.map((s) => {
+          const types = !s.request_types ? [] : (Array.isArray(s.request_types) ? s.request_types : [s.request_types]);
+          const open = expanded === s.id;
+          return (
+            <div
+              key={s.id}
+              className={`dam-sop ${s.status === 'draft' ? 'dam-sop--draft' : ''}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => setExpanded(open ? null : s.id)}
+              onKeyDown={(e) => e.key === 'Enter' && setExpanded(open ? null : s.id)}
+            >
+              <div className="dam-sop__head">
+                <span className="dam-sop__id">{s.id}</span>
+                <span className={`dam-pill dam-pill--${s.active ? 'success' : s.status === 'draft' ? 'warning' : 'neutral'} dam-pill--plain`}>
+                  {s.active ? 'active' : s.status}
+                </span>
+                <span className="dam-sop__ver">v{s.version}</span>
+              </div>
+              <div className="dam-sop__name">{s.name}</div>
+              <div className="dam-sop__owner">{s.owner}</div>
+              {types.length > 0 && (
+                <div className="dam-sop__types">
+                  {types.map((t) => (
+                    <span key={t} className="dam-pill dam-pill--info dam-pill--plain">{t.replaceAll('_', ' ')}</span>
+                  ))}
+                </div>
+              )}
+              {open && (
+                <div className="dam-sop__detail">
+                  <div className="dam-sop__row"><span>Status</span><span>{s.status}{s.active ? '' : s.status === 'approved' ? ' · not yet effective' : ' · will not route'}</span></div>
+                  <div className="dam-sop__row"><span>Effective date</span><span>{s.effective_date || '—'}</span></div>
+                  <div className="dam-sop__row"><span>Owner</span><span>{s.owner}</span></div>
+                  <div className="dam-sop__row"><span>Version</span><span>v{s.version}</span></div>
+                  <div className="dam-sop__row"><span>Serves</span><span>{types.length ? types.map((t) => t.replaceAll('_', ' ')).join(', ') : 'fallback (any uncovered request)'}</span></div>
+                  <p className="dam-meta" style={{ marginTop: 'var(--sp-2)' }}>
+                    Approval level is set by the transaction amount (delegation matrix), not the SOP.
+                  </p>
+                  {types.length > 0 && (
+                    <Button
+                      size="sm"
+                      kind="tertiary"
+                      renderIcon={DecisionTree}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        set('request_type')(types[0]);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      style={{ marginTop: 'var(--sp-2)' }}
+                    >
+                      Try in simulator
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
