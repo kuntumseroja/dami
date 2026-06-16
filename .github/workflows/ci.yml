@@ -3,6 +3,8 @@ name: CI
 on:
   push:
   pull_request:
+  schedule:
+    - cron: "0 2 * * *"   # nightly retrieval-quality regression watch
 
 jobs:
   backend:
@@ -20,6 +22,8 @@ jobs:
         run: ruff check app tests
       - name: Tests (in-memory adapters)
         run: pytest -q
+      - name: Retrieval eval scorecard (golden set, quality gate)
+        run: python -m scripts.eval_retrieval
 
   backend-postgres:
     runs-on: ubuntu-latest

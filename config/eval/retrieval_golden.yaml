@@ -1,0 +1,137 @@
+# Golden retrieval set (Sprint 2.4).
+# A small, anonymized governance corpus + queries with known-relevant content.
+# A query "hits" if a retrieved chunk contains any of its `must_contain`
+# phrases. Embedder-agnostic (matches on content), so it runs in CI on the
+# hash embedder today and on the enterprise embedder once 2.1 lands.
+# Bilingual; exact-figure queries exercise the sparse half, paraphrase queries
+# the dense half — together they show the hybrid lift.
+
+corpus:
+  - id: A_submission_disposal
+    doc_type: submission
+    text: |
+      Surat Permohonan Persetujuan Divestasi Aset Nomor 042/PTPN-III/DIV/VI/2026
+      tertanggal 3 Juni 2026. PT Perkebunan Nusantara III (Persero) mengajukan
+      persetujuan untuk melepas Kebun Sei Meranti (Hak Guna Usaha 4.250 ha beserta
+      pabrik kelapa sawit) di Kabupaten Labuhanbatu, Sumatera Utara, melalui lelang
+      terbuka. Nilai appraisal independen Rp420.000.000.000. Penyelesaian transaksi
+      ditargetkan 90 hari kerja setelah persetujuan.
+  - id: B_valuation_annex
+    doc_type: submission
+    text: |
+      Lampiran Valuasi Aset Kebun Sei Meranti. Nilai buku (book value) per
+      31 Desember 2025 sebesar Rp371.000.000.000 (audited). Nilai appraisal
+      independen tahun 2026 sebesar Rp420.000.000.000 oleh KJPP independen.
+      Keuntungan atas pelepasan aset (gain on disposal) Rp49.000.000.000.
+      Kenaikan terhadap nilai buku tercatat 130 persen.
+  - id: C_lease_submission
+    doc_type: submission
+    text: |
+      Permohonan Persetujuan Sewa Aset oleh PT Pelabuhan Indonesia (Persero).
+      Penyewaan gudang seluas 1.200 meter persegi di Terminal Peti Kemas Surabaya
+      untuk jangka waktu 12 bulan. Nilai sewa Rp750.000.000 per tahun kepada
+      PT Logistik Nusantara Jaya. Pemanfaatan aset menganggur (idle asset).
+  - id: D_investment_thesis
+    doc_type: submission
+    text: |
+      Permohonan Penyertaan Modal oleh PT Aviasi Pariwisata Indonesia (InJourney).
+      Penyertaan 40 persen ekuitas pada usaha patungan pengembangan kawasan
+      pariwisata terintegrasi. Nilai investasi Rp1.200.000.000.000. Proyeksi
+      Internal Rate of Return (IRR) 14,5 persen dengan periode holding 7 tahun.
+      Eksposur regulasi pada sektor pariwisata dan pertanahan.
+  - id: E_sop_delegation
+    doc_type: sop
+    text: |
+      Standard Operating Procedure — Delegasi Kewenangan Persetujuan Aksi Korporasi.
+      Permohonan rutin dan skala menengah dalam RKAP disetujui oleh CEO Danantara.
+      Aksi super-strategis seperti divestasi berskala besar, merger dan akuisisi
+      lintas klaster, atau penerbitan utang global wajib persetujuan Dewan Pengawas.
+      Aksi berdampak fiskal masif atau Proyek Strategis Nasional memerlukan
+      persetujuan Presiden Republik Indonesia.
+
+  # --- Distractors: same domain/vocabulary, none holds an expected phrase.
+  # They force ranking to matter at small k (without them, top-k returns the
+  # whole corpus and every query trivially "hits").
+  - id: X1_distractor_disposal
+    doc_type: submission
+    text: |
+      Permohonan Persetujuan Divestasi armada kapal tunda milik anak usaha
+      pelayaran. Nilai appraisal independen Rp88.000.000.000 melalui penjualan
+      langsung. Lokasi aset di Pelabuhan Makassar, Sulawesi Selatan.
+  - id: X2_distractor_lease
+    doc_type: submission
+    text: |
+      Permohonan Persetujuan Sewa lahan parkir bandara seluas 3.000 meter persegi
+      untuk jangka waktu 24 bulan. Nilai sewa Rp1.500.000.000 per tahun kepada
+      koperasi karyawan. Pemanfaatan aset komersial.
+  - id: X3_distractor_investment
+    doc_type: submission
+    text: |
+      Permohonan Penyertaan Modal pada perusahaan energi terbarukan. Penyertaan
+      25 persen ekuitas senilai Rp600.000.000.000. Proyeksi Internal Rate of
+      Return (IRR) 11,2 persen dengan periode holding 10 tahun.
+  - id: X4_distractor_valuation
+    doc_type: submission
+    text: |
+      Lampiran Valuasi gedung perkantoran pusat. Nilai buku per 31 Desember 2025
+      sebesar Rp512.000.000.000 (audited). Nilai appraisal independen 2026
+      Rp540.000.000.000 oleh KJPP. Keuntungan atas revaluasi Rp28.000.000.000.
+  - id: X5_distractor_sop
+    doc_type: sop
+    text: |
+      Standard Operating Procedure — Tata Kelola Pengadaan Barang dan Jasa.
+      Pengadaan di bawah ambang batas disetujui oleh direktur teknis. Pengadaan
+      strategis memerlukan persetujuan komite pengadaan dan CEO Danantara.
+  - id: X6_distractor_debt
+    doc_type: submission
+    text: |
+      Permohonan Persetujuan penerbitan obligasi global senilai USD 500 juta
+      untuk pembiayaan kembali utang jatuh tempo. Tenor 10 tahun, kupon indikatif
+      5,8 persen. Wajib persetujuan Dewan Pengawas dan koordinasi Kementerian Keuangan.
+  - id: X7_distractor_merger
+    doc_type: submission
+    text: |
+      Permohonan Persetujuan merger dua anak usaha logistik untuk efisiensi
+      jaringan distribusi. Nilai gabungan aset Rp2.100.000.000.000. Sinergi biaya
+      diproyeksikan Rp140.000.000.000 per tahun.
+  - id: X8_distractor_capex
+    doc_type: submission
+    text: |
+      Permohonan Persetujuan belanja modal pembangunan terminal curah kering
+      di Pelabuhan Banten. Nilai proyek Rp950.000.000.000, jangka waktu konstruksi
+      30 bulan. Termasuk dalam RKAP berjalan.
+  - id: X9_distractor_communication
+    doc_type: communication
+    text: |
+      Siaran pers mengenai kinerja triwulanan klaster perkebunan. Pertumbuhan
+      pendapatan 8,4 persen secara tahunan. Tidak memuat keputusan aksi korporasi
+      yang memerlukan persetujuan.
+  - id: X10_distractor_board_note
+    doc_type: board_note
+    text: |
+      Risalah rapat Dewan Pengawas membahas arahan strategis tahunan dan
+      penetapan target dividen. Tidak terdapat pembahasan transaksi divestasi
+      atau penyertaan modal spesifik pada agenda ini.
+
+queries:
+  - {q: "nilai appraisal divestasi Kebun Sei Meranti", must_contain: ["Rp420.000.000.000"]}
+  - {q: "appraisal value of the Sei Meranti estate disposal", must_contain: ["Rp420.000.000.000"]}
+  - {q: "nomor surat permohonan divestasi PTPN III", must_contain: ["042/PTPN-III/DIV/VI/2026"]}
+  - {q: "luas hak guna usaha kebun yang dilepas", must_contain: ["4.250 ha"]}
+  - {q: "lokasi aset perkebunan yang didivestasi", must_contain: ["Labuhanbatu"]}
+  - {q: "target waktu penyelesaian transaksi divestasi", must_contain: ["90 hari kerja"]}
+  - {q: "book value of the plantation asset 2025", must_contain: ["Rp371.000.000.000"]}
+  - {q: "keuntungan atas pelepasan aset", must_contain: ["Rp49.000.000.000"]}
+  - {q: "persentase kenaikan terhadap nilai buku", must_contain: ["130 persen"]}
+  - {q: "siapa penilai independen valuasi aset", must_contain: ["KJPP"]}
+  - {q: "nilai sewa gudang Surabaya per tahun", must_contain: ["Rp750.000.000"]}
+  - {q: "warehouse lease term Pelindo Surabaya", must_contain: ["12 bulan"]}
+  - {q: "penyewa gudang terminal peti kemas", must_contain: ["Logistik Nusantara Jaya"]}
+  - {q: "luas gudang yang disewa", must_contain: ["1.200 meter persegi"]}
+  - {q: "nilai penyertaan modal InJourney", must_contain: ["Rp1.200.000.000.000"]}
+  - {q: "projected IRR of the tourism joint venture", must_contain: ["14,5 persen"]}
+  - {q: "porsi ekuitas penyertaan modal", must_contain: ["40 persen"]}
+  - {q: "periode holding investasi pariwisata", must_contain: ["7 tahun"]}
+  - {q: "aksi korporasi yang wajib persetujuan Dewan Pengawas", must_contain: ["Dewan Pengawas"]}
+  - {q: "siapa menyetujui aksi berdampak fiskal masif", must_contain: ["Presiden Republik Indonesia"]}
+  - {q: "approval authority for routine RKAP corporate actions", must_contain: ["CEO Danantara"]}
