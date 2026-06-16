@@ -50,6 +50,13 @@ export default function App() {
             </SideNavLink>
           ))}
         </SideNavItems>
+        <div className="dam-account">
+          <span className="dam-account__avatar">DA</span>
+          <div>
+            <div className="dam-account__name">DAM Analyst</div>
+            <div className="dam-account__role">Danantara · Reviewer</div>
+          </div>
+        </div>
       </SideNav>
       <Content style={{ marginLeft: '16rem', background: 'transparent' }}>
         <Routes>
