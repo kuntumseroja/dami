@@ -234,6 +234,30 @@ code, pre {
 .dam-pill--warning { background: var(--ibm-badge-warning-bg); color: var(--ibm-badge-warning-text); }
 .dam-pill--error { background: var(--ibm-badge-error-bg); color: var(--ibm-error); }
 .dam-pill--neutral { background: var(--ibm-surface-secondary); color: var(--ibm-text-muted); }
+/* Static (non-dot) pill variant for inline labels in agent results. */
+.dam-pill--plain::before { display: none; }
+
+/* Summary metric strip used at the top of agent result panels. */
+.dam-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--bg-card);
+  border: 1px solid var(--ibm-border);
+  border-left: 3px solid var(--ibm-blue);
+  border-radius: var(--radius-card);
+  box-shadow: var(--elev-1);
+  margin-bottom: var(--sp-4);
+}
+.dam-summary__value { font: var(--type-h2); line-height: 1; color: var(--ibm-text-primary); }
+.dam-summary__label { color: var(--ibm-text-muted); font: var(--type-link); }
+
+/* Finding card: severity shown as a left accent rail. */
+.dam-finding { border-left: 3px solid var(--ibm-border-soft); }
+.dam-finding--critical { border-left-color: var(--ibm-error); }
+.dam-finding--major { border-left-color: var(--ibm-warning); }
+.dam-finding--minor { border-left-color: var(--ibm-border-soft); }
 
 /* -- Two-column footer: activity feed + stats panel ---------------------- */
 .dam-split {

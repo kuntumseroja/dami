@@ -4,7 +4,6 @@ import {
   FileUploaderDropContainer,
   InlineLoading,
   InlineNotification,
-  Tag,
   TextArea,
   TextInput,
 } from '@carbon/react';
@@ -45,12 +44,16 @@ export default function Drafting() {
 
   return (
     <div className="dam-page">
-      <h1 className="dam-page-title">AI-Assisted NOTA Drafting</h1>
-      <p className="dam-page-subtitle">
-        The drafting agent generates the descriptive 80% of a NOTA from submission
-        documents, templates, and historical notes. Judgment sections stay empty —
-        analysis and recommendations remain yours.
-      </p>
+      <div className="dam-page-header">
+        <div>
+          <h1 className="dam-page-title">AI-Assisted NOTA Drafting</h1>
+          <p className="dam-page-subtitle">
+            The drafting agent generates the descriptive 80% of a NOTA from submission
+            documents, templates, and historical notes. Judgment sections stay empty —
+            analysis and recommendations remain yours.
+          </p>
+        </div>
+      </div>
 
       {error && (
         <InlineNotification kind="error" title="Error" subtitle={error} lowContrast />
@@ -97,11 +100,11 @@ export default function Drafting() {
           </p>
           {draft.sections.map((s) => (
             <div key={s.heading} style={{ marginBottom: '1.5rem' }}>
-              <h3 style={{ fontWeight: 400, fontSize: '1.125rem' }}>
-                {s.heading}{' '}
-                <Tag type={s.kind === 'descriptive' ? 'blue' : 'purple'}>
+              <h3 style={{ fontWeight: 400, fontSize: '1.125rem', display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+                {s.heading}
+                <span className={`dam-pill dam-pill--${s.kind === 'descriptive' ? 'info' : 'neutral'} dam-pill--plain`}>
                   {s.kind === 'descriptive' ? 'AI draft' : 'human judgment'}
-                </Tag>
+                </span>
               </h3>
               {s.kind === 'descriptive' ? (
                 <>

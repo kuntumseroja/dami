@@ -30,16 +30,17 @@ export default function Audit() {
 
   return (
     <div className="dam-page" style={{ maxWidth: '1312px' }}>
-      <h1 className="dam-page-title">Audit Trail &amp; Explainability</h1>
-      <p className="dam-page-subtitle">
-        Every AI invocation, rule evaluation, and workflow transition is recorded
-        append-only. Any output can be traced back to its sources, fired rules, and
-        sign-offs — no individual carries unrecorded liability.
-      </p>
-
-      <Button kind="tertiary" renderIcon={Renew} onClick={refresh} style={{ marginBottom: 'var(--sp-4)' }}>
-        Refresh
-      </Button>
+      <div className="dam-page-header">
+        <div>
+          <h1 className="dam-page-title">Audit Trail &amp; Explainability</h1>
+          <p className="dam-page-subtitle">
+            Every AI invocation, rule evaluation, and workflow transition is recorded
+            append-only. Any output can be traced back to its sources, fired rules, and
+            sign-offs — no individual carries unrecorded liability.
+          </p>
+        </div>
+        <Button kind="tertiary" renderIcon={Renew} onClick={refresh}>Refresh</Button>
+      </div>
 
       <TableContainer className="dam-card" style={{ padding: 0 }}>
         <Table size="md">

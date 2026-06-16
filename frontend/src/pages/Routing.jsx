@@ -6,13 +6,26 @@ import {
   NumberInput,
   Select,
   SelectItem,
-  Tag,
   TextInput,
 } from '@carbon/react';
 import { DecisionTree } from '@carbon/icons-react';
 import { api } from '../api';
 
-const RISK_TAG = { low: 'green', medium: 'blue', high: 'red' };
+const RISK_PILL = { low: 'success', medium: 'warning', high: 'error' };
+
+// Mirrors the SubmissionFields.request_category enum + SOP routing rules.
+const REQUEST_TYPES = [
+  ['asset_lease', 'Asset lease'],
+  ['asset_utilization', 'Asset utilization'],
+  ['asset_disposal', 'Asset disposal'],
+  ['asset_acquisition', 'Asset acquisition'],
+  ['investment', 'Investment'],
+  ['debt_issuance', 'Debt issuance (bonds / sukuk)'],
+  ['merger_acquisition', 'Merger & acquisition'],
+  ['capital_expenditure', 'Capital expenditure / project'],
+  ['asset_writeoff', 'Asset write-off'],
+  ['other', 'Other'],
+];
 
 export default function Routing() {
   const [payload, setPayload] = useState({
@@ -41,12 +54,16 @@ export default function Routing() {
 
   return (
     <div className="dam-page">
-      <h1 className="dam-page-title">SOP Routing &amp; Eligibility</h1>
-      <p className="dam-page-subtitle">
-        Deterministic rules — digitized SOPs and delegation-of-authority
-        thresholds — decide which SOP applies, whether approval is required, and
-        the automation tier. The AI only explains; it never overrides the rules.
-      </p>
+      <div className="dam-page-header">
+        <div>
+          <h1 className="dam-page-title">SOP Routing &amp; Eligibility</h1>
+          <p className="dam-page-subtitle">
+            Deterministic rules — digitized SOPs and delegation-of-authority
+            thresholds — decide which SOP applies, whether approval is required, and
+            the automation tier. The AI only explains; it never overrides the rules.
+          </p>
+        </div>
+      </div>
 
       {error && (
         <InlineNotification kind="error" title="Error" subtitle={error} lowContrast />
@@ -66,12 +83,9 @@ export default function Routing() {
             value={payload.request_type}
             onChange={(e) => set('request_type')(e.target.value)}
           >
-            <SelectItem value="asset_lease" text="Asset lease" />
-            <SelectItem value="asset_utilization" text="Asset utilization" />
-            <SelectItem value="asset_disposal" text="Asset disposal" />
-            <SelectItem value="asset_acquisition" text="Asset acquisition" />
-            <SelectItem value="investment" text="Investment" />
-            <SelectItem value="other" text="Other" />
+            {REQUEST_TYPES.map(([value, text]) => (
+              <SelectItem key={value} value={value} text={text} />
+            ))}
           </Select>
           <NumberInput
             id="amount"
@@ -102,14 +116,16 @@ export default function Routing() {
       {decision && (
         <div className="dam-card dam-card--accent">
           <h2 style={{ fontWeight: 300, marginTop: 0 }}>{decision.applicable_sop}</h2>
-          <p>
-            <Tag type={decision.approval_required ? 'red' : 'green'}>
+          <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap', margin: 'var(--sp-3) 0' }}>
+            <span className={`dam-pill dam-pill--${decision.approval_required ? 'warning' : 'success'}`}>
               {decision.approval_required
-                ? `Approval required — ${decision.approval_level?.replaceAll('_', ' ')}`
+                ? `Approval — ${decision.approval_level?.replaceAll('_', ' ')}`
                 : 'No approval required'}
-            </Tag>{' '}
-            <Tag type={RISK_TAG[decision.risk_tier]}>{decision.risk_tier} risk</Tag>
-          </p>
+            </span>
+            <span className={`dam-pill dam-pill--${RISK_PILL[decision.risk_tier]}`}>
+              {decision.risk_tier} risk
+            </span>
+          </div>
           <p style={{ whiteSpace: 'pre-wrap' }}>{decision.explanation}</p>
           <p className="dam-meta">
             Rules fired: {decision.rules_fired.map((r) => <code key={r}>{r} </code>)}
