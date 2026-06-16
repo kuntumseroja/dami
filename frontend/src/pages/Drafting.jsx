@@ -150,6 +150,9 @@ export default function Drafting() {
             <span className={`dam-pill dam-pill--${checklist.complete ? 'success' : 'warning'}`}>
               {checklist.complete ? 'Complete' : `${checklist.missing.length} missing`}
             </span>
+            <span className="dam-meta" style={{ marginLeft: 'auto' }}>
+              {checklist.sop ? `Profile: ${checklist.sop}` : 'Default profile (not yet routed)'}
+            </span>
           </h3>
           {checklist.items.map((it) => {
             const state = it.present ? 'ok' : it.required ? 'missing' : 'optional';

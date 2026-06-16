@@ -124,9 +124,11 @@ async def list_documents(case_id: str, c: Container = Depends(deps)):
 
 
 @router.get("/cases/{case_id}/checklist")
-async def cover_checklist(case_id: str, c: Container = Depends(deps)):
-    """Completeness checklist derived from the documents actually attached."""
-    report = await build_cover_checklist(case_id, repository=c.repository)
+async def cover_checklist(case_id: str, sop: str | None = None,
+                         c: Container = Depends(deps)):
+    """Completeness checklist derived from attached docs; required-collateral set
+    varies by SOP (resolved from the case's routing decision, or `?sop=` override)."""
+    report = await build_cover_checklist(case_id, repository=c.repository, sop=sop)
     return report.model_dump(mode="json")
 
 
