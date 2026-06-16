@@ -43,6 +43,7 @@ async def route_request(
     decision = RoutingDecision(
         case_id=request.case_id,
         applicable_sop=outcome["sop"],
+        sop_version=outcome.get("sop_version"),
         approval_required=outcome["approval_required"],
         approval_level=outcome["approval_level"],
         risk_tier=outcome["risk_tier"],

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Button,
   InlineLoading,
@@ -41,6 +41,13 @@ export default function Routing() {
   const [decision, setDecision] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [sops, setSops] = useState([]);
+  const [coverage, setCoverage] = useState(null);
+
+  useEffect(() => {
+    api.sops().then(setSops).catch(() => setSops([]));
+    api.sopCoverage().then(setCoverage).catch(() => setCoverage(null));
+  }, []);
 
   const set = (key) => (value) => setPayload((p) => ({ ...p, [key]: value }));
 
@@ -132,11 +139,38 @@ export default function Routing() {
           </div>
           <p style={{ whiteSpace: 'pre-wrap' }}>{decision.explanation}</p>
           <p className="dam-meta">
-            Rules fired: {decision.rules_fired.map((r) => <code key={r}>{r} </code>)}
+            SOP version: <code>v{decision.sop_version}</code> · Rules fired: {decision.rules_fired.map((r) => <code key={r}>{r} </code>)}
             · Trace: <code>{decision.trace_id}</code>
           </p>
         </div>
       )}
+
+      {/* SOP catalogue + coverage (4.1, FR-7) */}
+      <div className="dam-section">
+        <h2 className="dam-section__title">SOP catalogue</h2>
+        {coverage && (
+          <span className="dam-section__meta">
+            {coverage.served}/{coverage.total} categories covered by an approved SOP
+            ({Math.round(coverage.coverage * 100)}%)
+          </span>
+        )}
+      </div>
+      <table>
+        <tr><th>SOP</th><th>Name</th><th>Owner</th><th>Ver</th><th>Status</th></tr>
+        {sops.map((s) => (
+          <tr key={s.id}>
+            <td><code>{s.id}</code></td>
+            <td>{s.name}</td>
+            <td className="dam-meta">{s.owner}</td>
+            <td>v{s.version}</td>
+            <td>
+              <span className={`dam-pill dam-pill--${s.active ? 'success' : 'warning'} dam-pill--plain`}>
+                {s.status}{!s.active && s.status === 'approved' ? ' (future)' : ''}
+              </span>
+            </td>
+          </tr>
+        ))}
+      </table>
     </div>
   );
 }

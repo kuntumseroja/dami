@@ -568,6 +568,7 @@ class RoutingRequest(BaseModel):
 class RoutingDecision(BaseModel):
     case_id: str
     applicable_sop: str
+    sop_version: int | None = None      # SOP lifecycle version recorded per decision (4.1/4.4)
     approval_required: bool
     approval_level: str | None = None
     risk_tier: RiskTier

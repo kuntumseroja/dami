@@ -6,45 +6,98 @@
 # deterministic and legally reconstructable — no individual judgment required
 # for low-risk flows.
 
+# SOP lifecycle (Sprint 4.1, FR-7): each SOP carries version / owner / status /
+# effective_date. Only status=approved with an effective_date on or before today
+# routes; draft/retired SOPs never apply (a category with no approved SOP falls
+# to the fallback). Edit metadata here — no software release.
 sops:
   - id: SOP-DAM-001
     name: Asset Disposal — Standard
+    version: 1
+    owner: Direktorat Aset & Manajemen
+    status: approved
+    effective_date: 2026-01-01
     applies_when:
       request_type: asset_disposal
   - id: SOP-DAM-002
     name: Asset Acquisition & Investment
+    version: 1
+    owner: Direktorat Investasi
+    status: approved
+    effective_date: 2026-01-01
     applies_when:
       request_type: [asset_acquisition, investment]
   - id: SOP-DAM-003
     name: Asset Utilization / Leasing
+    version: 1
+    owner: Direktorat Aset & Manajemen
+    status: approved
+    effective_date: 2026-01-01
     applies_when:
       request_type: [asset_lease, asset_utilization]
   - id: SOP-DAM-004
     name: Capital Markets & Debt Issuance
+    version: 1
+    owner: Direktorat Keuangan
+    status: approved
+    effective_date: 2026-01-01
     applies_when:
       request_type: debt_issuance
   - id: SOP-DAM-005
     name: Merger, Acquisition, Spin-off & Corporate Restructuring
+    version: 1
+    owner: Direktorat Legal & Kepatuhan
+    status: approved
+    effective_date: 2026-01-01
     applies_when:
       request_type: [merger_acquisition, spin_off]
   - id: SOP-DAM-006
     name: Capital Expenditure / Project Investment
+    version: 1
+    owner: Direktorat Investasi
+    status: approved
+    effective_date: 2026-01-01
     applies_when:
       request_type: capital_expenditure
   - id: SOP-DAM-007
     name: Asset Write-off / Impaired Asset Disposal
+    version: 1
+    owner: Direktorat Keuangan
+    status: approved
+    effective_date: 2026-01-01
     applies_when:
       request_type: asset_writeoff
   - id: SOP-DAM-008
     name: Equity Capital Markets (IPO & Rights Issue)
+    version: 1
+    owner: Direktorat Keuangan
+    status: approved
+    effective_date: 2026-01-01
     applies_when:
       request_type: [ipo, rights_issue]
   - id: SOP-DAM-009
     name: Corporate Dissolution & Liquidation
+    version: 1
+    owner: Direktorat Legal & Kepatuhan
+    status: approved
+    effective_date: 2026-01-01
     applies_when:
       request_type: dissolution
+  # Draft — under authoring; MUST NOT route until approved (4.1 demo).
+  - id: SOP-DAM-010
+    name: Strategic Partnership / Joint Venture (DRAFT)
+    version: 0
+    owner: Direktorat Investasi
+    status: draft
+    effective_date: null
+    applies_when:
+      request_type: strategic_partnership
   - id: SOP-DAM-999
     name: General Governance Request (fallback)
+    version: 1
+    owner: DAM Compliance
+    status: approved
+    effective_date: 2026-01-01
     applies_when: {}
 
 # Delegation of authority — amount thresholds in IDR.

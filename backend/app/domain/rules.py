@@ -7,6 +7,7 @@ This split is the liability shield: outcomes are reproducible from the YAML
 rulebook, and the audit trail records exactly which rule ids fired.
 """
 import os
+from datetime import date
 from functools import lru_cache
 from pathlib import Path
 
@@ -35,14 +36,28 @@ def _matches_type(rule_types, request_type: str) -> bool:
     return request_type in rule_types
 
 
+def _sop_active(sop: dict, today: date | None = None) -> bool:
+    """Only an approved SOP whose effective_date has arrived may route (4.1)."""
+    if sop.get("status", "approved") != "approved":
+        return False
+    eff = sop.get("effective_date")
+    if not eff:
+        return True
+    eff_date = eff if isinstance(eff, date) else date.fromisoformat(str(eff))
+    return eff_date <= (today or date.today())
+
+
 def evaluate(request: RoutingRequest) -> dict:
     """Return {sop, approval_required, approval_level, risk_tier, rules_fired}."""
     book = load_rulebook()
     fired: list[str] = []
 
-    # 1. SOP selection — first match wins, last entry is the fallback.
+    # 1. SOP selection — first ACTIVE match wins; last entry is the fallback.
+    #    Draft/retired/not-yet-effective SOPs are skipped (4.1 only-approved-active).
     sop = book["sops"][-1]
     for candidate in book["sops"]:
+        if not _sop_active(candidate):
+            continue
         applies = candidate.get("applies_when", {})
         rule_type = applies.get("request_type")
         if rule_type is None and candidate is not book["sops"][-1]:
@@ -77,8 +92,36 @@ def evaluate(request: RoutingRequest) -> dict:
 
     return {
         "sop": f'{sop["id"]} — {sop["name"]}',
+        "sop_id": sop["id"],
+        "sop_version": sop.get("version"),
         "approval_required": approval["approval_required"],
         "approval_level": approval.get("approval_level"),
         "risk_tier": RiskTier(tier_rule["tier"]),
         "rules_fired": fired,
     }
+
+
+def sop_catalogue() -> list[dict]:
+    """All SOPs with lifecycle metadata + computed active flag (4.1)."""
+    return [
+        {"id": s["id"], "name": s["name"], "version": s.get("version"),
+         "owner": s.get("owner"), "status": s.get("status", "approved"),
+         "effective_date": str(s.get("effective_date")) if s.get("effective_date") else None,
+         "active": _sop_active(s),
+         "request_types": s.get("applies_when", {}).get("request_type")}
+        for s in load_rulebook()["sops"]
+    ]
+
+
+def sop_coverage(categories: list[str]) -> dict:
+    """Which request categories are served by an ACTIVE (approved) SOP (4.1)."""
+    covered = {}
+    for cat in categories:
+        match = next((s["id"] for s in load_rulebook()["sops"]
+                      if _sop_active(s)
+                      and _matches_type(s.get("applies_when", {}).get("request_type"), cat)
+                      and s.get("applies_when", {}).get("request_type") is not None), None)
+        covered[cat] = match            # None → only the fallback covers it
+    served = sum(1 for v in covered.values() if v)
+    return {"categories": covered, "served": served, "total": len(categories),
+            "coverage": round(served / len(categories), 4) if categories else 0.0}

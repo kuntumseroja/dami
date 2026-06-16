@@ -73,4 +73,6 @@ export const api = {
   runPipeline: (caseId) => fetch(`/api/agents/pipeline/${caseId}`, { method: 'POST' }).then(json),
   reviewPanel: (caseId) => fetch(`/api/agents/review-panel/${caseId}`, { method: 'POST' }).then(json),
   audit: (limit = 200) => fetch(`/api/audit?limit=${limit}`).then(json),
+  sops: () => fetch('/api/sop').then(json),
+  sopCoverage: () => fetch('/api/sop/coverage').then(json),
 };

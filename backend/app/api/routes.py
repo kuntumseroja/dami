@@ -26,6 +26,7 @@ from app.domain.models import (
     SignoffRequired,
     User,
 )
+from app.domain.rules import sop_catalogue, sop_coverage
 from app.domain.taxonomy import CONSISTENCY_TYPES, default_severities
 from app.infrastructure.container import Container, get_container
 from app.infrastructure.security import get_current_user, require_roles
@@ -80,6 +81,23 @@ async def consistency_taxonomy():
 async def list_templates(c: Container = Depends(deps)):
     """NOTA template catalogue (data-driven; add a YAML to add a structure)."""
     return [t.model_dump(mode="json") for t in c.templates.list()]
+
+
+@router.get("/sop")
+async def list_sops():
+    """SOP catalogue with lifecycle metadata (version/owner/status/active) — 4.1."""
+    return sop_catalogue()
+
+
+@router.get("/sop/coverage")
+async def sop_coverage_report():
+    """Which request categories are served by an active (approved) SOP — 4.1."""
+    from typing import get_args
+
+    from app.domain.models import SubmissionFields
+    cats = [c for c in get_args(SubmissionFields.model_fields["request_category"].annotation)
+            if c != "other"]
+    return sop_coverage(cats)
 
 
 @router.get("/workflow/stages")
