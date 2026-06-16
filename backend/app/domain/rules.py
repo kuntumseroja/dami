@@ -113,6 +113,28 @@ def sop_catalogue() -> list[dict]:
     ]
 
 
+def decision_tree() -> dict:
+    """The routing rulebook as a reviewable tree (4.2): SOP selection →
+    approval thresholds → risk tiers. Non-technical, no YAML."""
+    book = load_rulebook()
+    return {
+        "sops": sop_catalogue(),
+        "approval_rules": [
+            {"id": r["id"], "description": r.get("description"),
+             "max_amount_idr": r.get("max_amount_idr"),
+             "approval_required": r.get("approval_required"),
+             "approval_level": r.get("approval_level")}
+            for r in book["approval_rules"]
+        ],
+        "risk_rules": [
+            {"id": r["id"], "description": r.get("description"),
+             "max_amount_idr": r.get("max_amount_idr"),
+             "request_types": r.get("request_types"), "tier": r.get("tier")}
+            for r in book["risk_rules"]
+        ],
+    }
+
+
 def sop_coverage(categories: list[str]) -> dict:
     """Which request categories are served by an ACTIVE (approved) SOP (4.1)."""
     covered = {}

@@ -367,6 +367,29 @@ code, pre {
   gap: var(--sp-2);
 }
 
+/* -- Decision tree + what-if (4.2) --------------------------------------- */
+.dam-tree { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-4); align-items: start; }
+@media (max-width: 800px) { .dam-tree { grid-template-columns: 1fr; } }
+.dam-lane__title { font: var(--type-label); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--ibm-text-muted); margin-bottom: var(--sp-2); }
+.dam-node {
+  background: var(--bg-card);
+  border: 1px solid var(--ibm-border);
+  border-radius: var(--radius-control);
+  padding: var(--sp-3);
+  margin-bottom: var(--sp-2);
+  font: var(--type-link);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.dam-node code { font-size: 11px; color: var(--ibm-blue-deep); }
+.dam-node__sub { color: var(--ibm-text-muted); font: var(--type-label); margin-top: 2px; }
+.dam-node--fired {
+  background: var(--tint-success);
+  border-color: var(--ibm-success);
+  box-shadow: var(--elev-1);
+}
+.dam-node--fired::after { content: ' ✓ fired'; color: var(--ibm-success); font-weight: 600; font-size: 11px; }
+.dam-node--dim { opacity: 0.55; }
+
 /* -- SOP catalogue cards (4.1) ------------------------------------------- */
 .dam-sop-grid {
   display: grid;

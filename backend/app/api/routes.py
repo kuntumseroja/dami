@@ -26,7 +26,7 @@ from app.domain.models import (
     SignoffRequired,
     User,
 )
-from app.domain.rules import sop_catalogue, sop_coverage
+from app.domain.rules import decision_tree, evaluate, sop_catalogue, sop_coverage
 from app.domain.taxonomy import CONSISTENCY_TYPES, default_severities
 from app.infrastructure.container import Container, get_container
 from app.infrastructure.security import get_current_user, require_roles
@@ -87,6 +87,29 @@ async def list_templates(c: Container = Depends(deps)):
 async def list_sops():
     """SOP catalogue with lifecycle metadata (version/owner/status/active) — 4.1."""
     return sop_catalogue()
+
+
+@router.get("/routing/decision-tree")
+async def routing_decision_tree():
+    """The routing rulebook as a reviewable decision tree (4.2)."""
+    return decision_tree()
+
+
+@router.get("/routing/simulate")
+async def routing_simulate(request_type: str, amount_idr: float = 0,
+                          business_unit: str = ""):
+    """Deterministic what-if: evaluate the rules and return the fired path
+    (no LLM, instant) — drives the decision-tree highlight (4.2)."""
+    outcome = evaluate(RoutingRequest(case_id="simulate", request_type=request_type,
+                                      amount_idr=amount_idr, business_unit=business_unit))
+    return {
+        "sop": outcome["sop"], "sop_id": outcome["sop_id"],
+        "sop_version": outcome.get("sop_version"),
+        "approval_required": outcome["approval_required"],
+        "approval_level": outcome.get("approval_level"),
+        "risk_tier": outcome["risk_tier"].value,
+        "rules_fired": outcome["rules_fired"],
+    }
 
 
 @router.get("/sop/coverage")

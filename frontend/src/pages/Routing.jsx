@@ -44,11 +44,23 @@ export default function Routing() {
   const [sops, setSops] = useState([]);
   const [coverage, setCoverage] = useState(null);
   const [expanded, setExpanded] = useState(null);
+  const [tree, setTree] = useState(null);
+  const [simType, setSimType] = useState('capital_expenditure');
+  const [simAmount, setSimAmount] = useState(0);
+  const [sim, setSim] = useState(null);
 
   useEffect(() => {
     api.sops().then(setSops).catch(() => setSops([]));
     api.sopCoverage().then(setCoverage).catch(() => setCoverage(null));
+    api.decisionTree().then(setTree).catch(() => setTree(null));
   }, []);
+
+  const simulate = () =>
+    api.routingSimulate(simType, simAmount).then(setSim).catch((e) => setError(e.message));
+
+  const fired = new Set(sim?.rules_fired || []);
+  const node = (id) => `dam-node ${fired.has(id) ? 'dam-node--fired' : sim ? 'dam-node--dim' : ''}`;
+  const rp = (n) => (n == null ? 'no ceiling' : `≤ Rp${(n / 1e9).toLocaleString()} bn`);
 
   const set = (key) => (value) => setPayload((p) => ({ ...p, [key]: value }));
 
@@ -144,6 +156,60 @@ export default function Routing() {
             · Trace: <code>{decision.trace_id}</code>
           </p>
         </div>
+      )}
+
+      {/* Decision tree + what-if simulator (4.2) */}
+      {tree && (
+        <>
+          <div className="dam-section">
+            <h2 className="dam-section__title">Decision tree &amp; what-if</h2>
+            <span className="dam-section__meta">Deterministic — the AI never decides this</span>
+          </div>
+          <div className="dam-card" style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <Select id="sim-type" labelText="Request type" value={simType}
+              onChange={(e) => setSimType(e.target.value)} style={{ minWidth: 220 }}>
+              {REQUEST_TYPES.map(([v, t]) => <SelectItem key={v} value={v} text={t} />)}
+            </Select>
+            <NumberInput id="sim-amount" label="Amount (IDR)" value={simAmount}
+              onChange={(_, { value }) => setSimAmount(Number(value) || 0)}
+              step={1000000000} min={0} />
+            <Button kind="tertiary" renderIcon={DecisionTree} onClick={simulate}>Simulate path</Button>
+            {sim && (
+              <span className="dam-meta">
+                → <code>{sim.sop_id}</code> · {sim.approval_required ? sim.approval_level?.replaceAll('_', ' ') : 'no approval'} · {sim.risk_tier} risk
+              </span>
+            )}
+          </div>
+          <div className="dam-tree" style={{ marginTop: 'var(--sp-4)' }}>
+            <div>
+              <div className="dam-lane__title">1 · Applicable SOP</div>
+              {tree.sops.map((s) => (
+                <div key={s.id} className={node(s.id)}>
+                  <code>{s.id}</code> {s.name}
+                  {!s.active && <span className="dam-node__sub">{s.status} — does not route</span>}
+                </div>
+              ))}
+            </div>
+            <div>
+              <div className="dam-lane__title">2 · Approval threshold</div>
+              {tree.approval_rules.map((r) => (
+                <div key={r.id} className={node(r.id)}>
+                  <code>{r.id}</code> {r.approval_required ? (r.approval_level || '').replaceAll('_', ' ') : 'no approval'}
+                  <div className="dam-node__sub">{rp(r.max_amount_idr)}</div>
+                </div>
+              ))}
+            </div>
+            <div>
+              <div className="dam-lane__title">3 · Risk tier</div>
+              {tree.risk_rules.map((r) => (
+                <div key={r.id} className={node(r.id)}>
+                  <code>{r.id}</code> {r.tier} risk
+                  <div className="dam-node__sub">{rp(r.max_amount_idr)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
       )}
 
       {/* SOP catalogue + coverage (4.1, FR-7) */}

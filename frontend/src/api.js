@@ -75,4 +75,7 @@ export const api = {
   audit: (limit = 200) => fetch(`/api/audit?limit=${limit}`).then(json),
   sops: () => fetch('/api/sop').then(json),
   sopCoverage: () => fetch('/api/sop/coverage').then(json),
+  decisionTree: () => fetch('/api/routing/decision-tree').then(json),
+  routingSimulate: (requestType, amountIdr) =>
+    fetch(`/api/routing/simulate?request_type=${requestType}&amount_idr=${amountIdr || 0}`).then(json),
 };
