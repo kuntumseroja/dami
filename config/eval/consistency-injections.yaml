@@ -1,0 +1,54 @@
+# Consistency-checker injection test set (Sprint 3.9, FR-2 metrics).
+# Each case is a small document set with a KNOWN planted discrepancy; `expected`
+# lists the taxonomy kind(s) the checker must surface. The scorer computes
+# precision/recall per type (AC-2.2 numeric recall >=0.93; AC-2.3 semantic
+# recall >=0.85) and gates model updates against a frozen baseline.
+# Type-level scoring is embedder/LLM-agnostic; the live run (needs an API key)
+# feeds real checker output into the same scorer.
+cases:
+  - id: INJ-01-numeric
+    expected: [numeric_mismatch]
+    documents:
+      - { title: submission.txt, text: "Nilai appraisal Rp420.000.000.000." }
+      - { title: board_note.txt, text: "Nilai appraisal Rp415.000.000.000." }
+  - id: INJ-02-numeric-pct
+    expected: [numeric_mismatch]
+    documents:
+      - { title: valuasi.txt, text: "Nilai buku Rp371 miliar; appraisal Rp420 miliar; kenaikan 130%." }
+  - id: INJ-03-date
+    expected: [date_mismatch]
+    documents:
+      - { title: submission.txt, text: "Tanggal surat 3 Juni 2026." }
+      - { title: nota.txt, text: "Tanggal surat 5 Juni 2026." }
+  - id: INJ-04-entity
+    expected: [entity_name_mismatch]
+    documents:
+      - { title: submission.txt, text: "Penyewa: PT Logistik Nusantara Jaya." }
+      - { title: decision.txt, text: "Penyewa: PT Logistik Nusantara Raya." }
+  - id: INJ-05-stale-version
+    expected: [stale_version_reference]
+    documents:
+      - { title: nota.txt, text: "Mengacu pada RKAP 2025 (telah digantikan RKAP 2026)." }
+  - id: INJ-06-missing-update
+    expected: [missing_propagated_update]
+    documents:
+      - { title: submission.txt, text: "Nilai investasi direvisi menjadi Rp1,2 triliun." }
+      - { title: board_note.txt, text: "Nilai investasi Rp1,0 triliun." }
+  - id: INJ-07-contradictory
+    expected: [contradictory_recommendation]
+    documents:
+      - { title: review_note.txt, text: "Merekomendasikan persetujuan." }
+      - { title: board_note.txt, text: "Merekomendasikan penolakan." }
+  - id: INJ-08-scope
+    expected: [scope_deviation]
+    documents:
+      - { title: submission.txt, text: "Permohonan sewa gudang 1.200 m2." }
+      - { title: decision.txt, text: "Menyetujui sewa gudang 1.200 m2 dan pembelian lahan baru." }
+  - id: INJ-09-structural
+    expected: [structural_omission]
+    documents:
+      - { title: nota.txt, text: "NOTA tanpa bagian Dasar Hukum maupun Rekomendasi." }
+  - id: INJ-10-formatting
+    expected: [formatting_inconsistency]
+    documents:
+      - { title: nota.txt, text: "Penomoran bagian tidak konsisten: 1, 2, 2, 4." }

@@ -1,0 +1,14 @@
+{
+  "_comment": "Frozen baseline for the consistency-checker injection harness (3.9). Regenerate from a blessed live run; the model-update gate fails if any type's recall drops more than MAX_RECALL_DROP below these.",
+  "per_type": {
+    "numeric_mismatch": { "recall": 1.0 },
+    "date_mismatch": { "recall": 1.0 },
+    "entity_name_mismatch": { "recall": 1.0 },
+    "stale_version_reference": { "recall": 1.0 },
+    "missing_propagated_update": { "recall": 1.0 },
+    "contradictory_recommendation": { "recall": 1.0 },
+    "scope_deviation": { "recall": 0.9 },
+    "structural_omission": { "recall": 0.9 },
+    "formatting_inconsistency": { "recall": 0.85 }
+  }
+}
