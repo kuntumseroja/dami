@@ -71,8 +71,11 @@ export default function Routing() {
     api.ruleChanges().then(setChanges).catch(() => setChanges([]));
   }, []);
 
-  const simulate = () =>
+  const [risk, setRisk] = useState(null);
+  const simulate = () => {
     api.routingSimulate(simType, simAmount).then(setSim).catch((e) => setError(e.message));
+    api.riskScore(simType, simAmount).then(setRisk).catch(() => setRisk(null));
+  };
 
   const fired = new Set(sim?.rules_fired || []);
   const node = (id) => `dam-node ${fired.has(id) ? 'dam-node--fired' : sim ? 'dam-node--dim' : ''}`;
@@ -218,6 +221,28 @@ export default function Routing() {
               </span>
             )}
           </div>
+          {risk && (
+            <div className="dam-card" style={{ marginTop: 'var(--sp-4)' }}>
+              <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center', marginBottom: 'var(--sp-3)' }}>
+                <strong>Risk score</strong>
+                <span className={`dam-pill dam-pill--${risk.automated ? 'success' : 'warning'}`}>
+                  {risk.automated ? 'Fully automated' : 'Human-in-the-loop'}
+                </span>
+                <span className="dam-meta">weighted {Math.round(risk.total * 100)}% · threshold {Math.round(risk.threshold * 100)}%</span>
+              </div>
+              {risk.dimensions.map((d) => (
+                <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)', padding: '3px 0' }}>
+                  <span style={{ width: 180, fontSize: 13 }}>{d.name}</span>
+                  <span style={{ flex: 1, height: 6, background: 'var(--ibm-surface-secondary)', borderRadius: 3, overflow: 'hidden' }}>
+                    <span style={{ display: 'block', height: '100%', width: `${d.score * 100}%`, background: d.flagged ? 'var(--ibm-warning)' : 'var(--ibm-success)' }} />
+                  </span>
+                  <span className="dam-meta" style={{ width: 36, textAlign: 'right' }}>{Math.round(d.score * 100)}</span>
+                  {d.flagged && <span className="dam-pill dam-pill--warning dam-pill--plain">flagged</span>}
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="dam-tree" style={{ marginTop: 'var(--sp-4)' }}>
             <div>
               <div className="dam-lane__title">1 · Applicable SOP</div>

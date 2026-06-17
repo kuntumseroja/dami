@@ -1,0 +1,42 @@
+# Multi-dimensional risk scoring (Sprint 4.5, FR-8). Deterministic + configurable.
+# Each dimension scores 0..1; at/above `threshold` it is flagged. If ANY dimension
+# is flagged the file goes human-in-the-loop; only all-below-threshold runs the
+# fully automated path. Edit weights/bands/maps here — no software release.
+threshold: 0.5
+weights:
+  transaction_value: 0.30
+  entity_risk: 0.15
+  novelty: 0.20
+  precedent_availability: 0.15
+  regulatory_exposure: 0.20
+
+# Transaction value → score, by IDR band (first band whose max the amount is < ).
+value_bands:
+  - { max: 1000000000,    score: 0.10 }   # < Rp1 bn
+  - { max: 500000000000,  score: 0.40 }   # < Rp500 bn
+  - { max: 5000000000000, score: 0.70 }   # < Rp5 tn
+  - { max: null,          score: 1.00 }   # ≥ Rp5 tn
+
+# Entity risk rating by requesting unit (substring match); else default.
+entity_ratings:
+  default: 0.30
+
+# Regulatory exposure by request category.
+regulatory_exposure:
+  asset_lease: 0.20
+  asset_utilization: 0.20
+  asset_writeoff: 0.40
+  asset_disposal: 0.50
+  asset_acquisition: 0.60
+  investment: 0.60
+  capital_expenditure: 0.60
+  spin_off: 0.70
+  rights_issue: 0.70
+  dissolution: 0.70
+  ipo: 0.80
+  debt_issuance: 0.80
+  merger_acquisition: 0.90
+  other: 0.60
+
+# Precedent: fewer than this many prior similar cases → higher risk + novelty.
+precedent_low_count: 2

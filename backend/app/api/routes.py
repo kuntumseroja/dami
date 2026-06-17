@@ -26,6 +26,7 @@ from app.domain.models import (
     SignoffRequired,
     User,
 )
+from app.domain.risk_scoring import score_request
 from app.domain.rules import decision_tree, evaluate, sop_catalogue, sop_coverage
 from app.domain.taxonomy import CONSISTENCY_TYPES, default_severities
 from app.infrastructure.container import Container, get_container
@@ -93,6 +94,28 @@ async def list_templates(c: Container = Depends(deps)):
 async def list_sops():
     """SOP catalogue with lifecycle metadata (version/owner/status/active) — 4.1."""
     return sop_catalogue()
+
+
+@router.get("/risk/score")
+async def risk_score(request_category: str, amount_idr: float = 0,
+                    entity: str = "", precedents: int = 0):
+    """Deterministic multi-dimensional risk score → automated vs assisted (4.5)."""
+    return score_request(amount_idr=amount_idr, request_category=request_category,
+                         entity=entity, precedent_count=precedents)
+
+
+@router.get("/metrics/automation")
+async def automation_metrics(
+    user: User = Depends(get_current_user),
+    c: Container = Depends(deps),
+):
+    """Automated-vs-assisted ratio across open cases (4.5 dashboard)."""
+    scope = None if user.has_role(Role.BPI_OVERSIGHT) else user.entity.value
+    cases = await c.repository.list_all(scope)
+    automated = sum(1 for x in cases if x.risk_tier.value == "low")
+    total = len(cases)
+    return {"automated": automated, "assisted": total - automated, "total": total,
+            "automated_ratio": round(automated / total, 4) if total else 0.0}
 
 
 @router.get("/rules/version")

@@ -85,11 +85,13 @@ export default function Dashboard() {
   const [activity, setActivity] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [title, setTitle] = useState('');
+  const [automation, setAutomation] = useState(null);
   const navigate = useNavigate();
 
   const refresh = () => {
     api.listCases().then(setCases).catch(() => setCases([]));
     api.audit(8).then(setActivity).catch(() => setActivity([]));
+    api.automationMetrics().then(setAutomation).catch(() => setAutomation(null));
   };
   useEffect(() => { refresh(); }, []);
 
@@ -265,6 +267,12 @@ export default function Dashboard() {
               <span className="dam-stat__label">Closed</span>
               <span className="dam-stat__value">{cases.length - open.length}</span>
             </div>
+            {automation && (
+              <div className="dam-stat">
+                <span className="dam-stat__label">Automated vs assisted</span>
+                <span className="dam-stat__value">{Math.round(automation.automated_ratio * 100)}%</span>
+              </div>
+            )}
           </div>
           <Button
             kind="ghost"

@@ -76,6 +76,9 @@ export const api = {
   sops: () => fetch('/api/sop').then(json),
   sopCoverage: () => fetch('/api/sop/coverage').then(json),
   decisionTree: () => fetch('/api/routing/decision-tree').then(json),
+  riskScore: (category, amount, entity, precedents) =>
+    fetch(`/api/risk/score?request_category=${category}&amount_idr=${amount || 0}&entity=${encodeURIComponent(entity || '')}&precedents=${precedents || 0}`).then(json),
+  automationMetrics: () => fetch('/api/metrics/automation').then(json),
   rulesVersion: () => fetch('/api/rules/version').then(json),
   ruleChanges: () => fetch('/api/rules/changes').then(json),
   proposeRuleChange: (summary, detail) =>
