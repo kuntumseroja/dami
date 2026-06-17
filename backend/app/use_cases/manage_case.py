@@ -8,6 +8,7 @@ from app.domain.models import (
     BoardGateBlocked,
     Case,
     CaseEvent,
+    MergeGateBlocked,
     RiskTier,
     Role,
     User,
@@ -16,6 +17,7 @@ from app.domain.models import (
 )
 from app.domain.ports import AuditLog, CaseRepository
 from app.use_cases.board_gate import unresolved_critical
+from app.use_cases.workflow_ops import merge_gate_pending
 
 
 class Forbidden(Exception):
@@ -59,6 +61,9 @@ async def advance_case(case_id: str, user: User, *,
     idx = STAGE_ORDER.index(case.stage)
     next_stage = STAGE_ORDER[idx + 1] if idx + 1 < len(STAGE_ORDER) else None
     if next_stage == WorkflowStage.BOARD_PREPARATION:
+        pending_streams = await merge_gate_pending(case_id, repository=repository)
+        if pending_streams:
+            raise MergeGateBlocked(pending_streams)
         blocking = await unresolved_critical(case_id, repository=repository)
         if blocking:
             valid_override = bool(override_by) and override_by != user.id

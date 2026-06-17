@@ -28,6 +28,11 @@ async def _case_at_internal_review(repo, *, critical=True):
     findings = [{"id": "fnd_x", "severity": "critical" if critical else "warning",
                  "kind": "numeric_mismatch", "description": "Rp415 vs Rp420"}]
     await repo.save_artefact("c1", "consistency_report", {"findings": findings})
+    # complete the parallel workstreams so the 4.7 merge gate passes — this
+    # isolates the Critical gate under test
+    for stream in ("drafting", "routing_verification"):
+        await repo.save_artefact("c1", "workstream",
+                                 {"case_id": "c1", "stream": stream, "status": "complete"})
     return case
 
 

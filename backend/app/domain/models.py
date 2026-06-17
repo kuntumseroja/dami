@@ -180,11 +180,44 @@ class BoardGateBlocked(Exception):
         super().__init__(f"{len(items)} unresolved Critical item(s) block board preparation")
 
 
+class MergeGateBlocked(Exception):
+    """Advance to board prep blocked: parallel workstreams not all complete (4.7)."""
+
+    def __init__(self, pending: list[str]):
+        self.pending = pending
+        super().__init__(f"parallel workstream(s) not complete: {', '.join(pending)}")
+
+
+# Parallel workstreams that must merge before board preparation (4.7, FR-6).
+REQUIRED_WORKSTREAMS = ("drafting", "routing_verification")
+
+# Per-stage SLA in business days; a case past this in a stage alerts its
+# supervisor (bottleneck alerting, 4.7). None = no SLA.
+STAGE_SLA_DAYS = {
+    "submission_intake": 2, "eligibility_check": 1, "nota_drafting": 3,
+    "internal_review": 3, "board_preparation": 5, "decision": 7,
+    "communication_dispatch": 2, "closed": None,
+}
+
+
 class CaseEvent(BaseModel):
     stage: str
     note: str
     actor: str
     at: datetime = Field(default_factory=utcnow)
+
+
+class Notification(BaseModel):
+    """A task/alert for a human (4.7) — assignment, deadline, or SLA breach."""
+    id: str
+    to: str                          # user id or role queue (e.g. "supervisor")
+    kind: str                        # assignment | sla_breach
+    case_id: str
+    title: str
+    body: str = ""
+    deadline: str | None = None
+    created_at: datetime = Field(default_factory=utcnow)
+    read: bool = False
 
 
 class Case(BaseModel):

@@ -76,10 +76,24 @@ export default function Drafting() {
   useEffect(() => { api.listTemplates().then(setTemplates).catch(() => setTemplates([])); }, []);
 
   // Refresh the document list + the auto-reconciled completeness checklist.
+  const [workstreams, setWorkstreams] = useState(null);
+  const [ownerName, setOwnerName] = useState('');
+
   const refreshDocs = (id = caseId) => {
     if (!id) return;
     api.listDocuments(id).then(setDocs).catch(() => setDocs([]));
     api.checklist(id).then(setChecklist).catch(() => setChecklist(null));
+    api.caseWorkstreams(id).then(setWorkstreams).catch(() => setWorkstreams(null));
+  };
+
+  const markStream = async (stream) => {
+    try { await api.setWorkstream(caseId, stream, 'complete'); refreshDocs(caseId); }
+    catch (e) { setError(e.message); }
+  };
+  const assign = async () => {
+    if (!ownerName.trim() || !caseInfo) return;
+    try { await api.assignOwner(caseId, caseInfo.stage, ownerName); setOwnerName(''); }
+    catch (e) { setError(e.message); }
   };
 
   // When opened from an active process, load the case + its already-attached
@@ -224,6 +238,35 @@ export default function Drafting() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Workflow: stage owner + parallel workstreams + merge gate (4.7) */}
+      {caseInfo && workstreams && (
+        <div className="dam-card">
+          <h3 className="dam-subhead" style={{ marginTop: 0 }}>
+            Workflow
+            {workstreams.merge_pending.length === 0
+              ? <span className="dam-pill dam-pill--success dam-pill--plain">merge gate clear</span>
+              : <span className="dam-pill dam-pill--warning dam-pill--plain">merge: {workstreams.merge_pending.join(', ')} pending</span>}
+          </h3>
+          <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap', marginBottom: 'var(--sp-3)' }}>
+            {['drafting', 'routing_verification'].map((s) => {
+              const done = workstreams.streams[s] === 'complete';
+              return (
+                <Button key={s} size="sm" kind={done ? 'primary' : 'ghost'}
+                  renderIcon={done ? CheckmarkFilled : undefined} disabled={done}
+                  onClick={() => markStream(s)}>
+                  {s.replaceAll('_', ' ')}{done ? ' ✓' : ' — mark complete'}
+                </Button>
+              );
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <TextInput id="owner" labelText={`Assign owner for ${STAGE_LABELS[caseInfo.stage] || caseInfo.stage}`}
+              placeholder="user id" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
+            <Button size="sm" kind="tertiary" onClick={assign} disabled={!ownerName.trim()}>Assign + notify</Button>
+          </div>
         </div>
       )}
 

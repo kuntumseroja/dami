@@ -52,6 +52,13 @@ export const api = {
   findingResolutions: (caseId) =>
     fetch(`/api/cases/${caseId}/findings/resolutions`).then(json),
   boardGate: (caseId) => fetch(`/api/cases/${caseId}/board-gate`).then(json),
+  assignOwner: (caseId, stage, owner, deadlineDays) =>
+    fetch(`/api/cases/${caseId}/assign`, { method: 'POST', body: form({ stage, owner, deadline_days: deadlineDays || 3 }) }).then(json),
+  caseWorkstreams: (caseId) => fetch(`/api/cases/${caseId}/workstreams`).then(json),
+  setWorkstream: (caseId, stream, status) =>
+    fetch(`/api/cases/${caseId}/workstream`, { method: 'POST', body: form({ stream, status }) }).then(json),
+  notifications: (to, unreadOnly) => fetch(`/api/notifications?to=${encodeURIComponent(to)}&unread_only=${unreadOnly ? 'true' : 'false'}`).then(json),
+  slaScan: () => fetch('/api/workflow/sla-scan', { method: 'POST' }).then(json),
   submitReview: (caseId) => fetch(`/api/cases/${caseId}/submit-review`, { method: 'POST' }).then(json),
   acknowledgeReview: (caseId) => fetch(`/api/cases/${caseId}/review/acknowledge`, { method: 'POST' }).then(json),
   reviewState: (caseId) => fetch(`/api/cases/${caseId}/review-state`).then(json),

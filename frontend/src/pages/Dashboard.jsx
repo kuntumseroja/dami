@@ -86,7 +86,10 @@ export default function Dashboard() {
   const [modalOpen, setModalOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [automation, setAutomation] = useState(null);
+  const [bottlenecks, setBottlenecks] = useState(null);
   const navigate = useNavigate();
+
+  const scanSla = () => api.slaScan().then(setBottlenecks).catch(() => setBottlenecks([]));
 
   const refresh = () => {
     api.listCases().then(setCases).catch(() => setCases([]));
@@ -284,6 +287,28 @@ export default function Dashboard() {
             View full audit trail
           </Button>
         </div>
+      </div>
+
+      {/* SLA bottleneck scan (4.7) */}
+      <div className="dam-section">
+        <h2 className="dam-section__title">SLA bottlenecks</h2>
+        <Button kind="ghost" size="sm" onClick={scanSla}>Run SLA scan</Button>
+      </div>
+      <div className="dam-card">
+        {bottlenecks == null ? (
+          <span className="dam-muted">Run a scan to surface files past their stage SLA.</span>
+        ) : bottlenecks.length === 0 ? (
+          <span className="dam-muted">No SLA breaches — all open files within stage SLA.</span>
+        ) : bottlenecks.map((b) => (
+          <div key={b.case_id} className="dam-feed__row">
+            <span className="dam-pill dam-pill--error dam-pill--plain">{b.days_in_stage}d / {b.sla_days}d</span>
+            <div className="dam-feed__text">
+              <div className="dam-feed__title">{STAGE_LABELS[b.stage] || b.stage}</div>
+              <div className="dam-feed__sub"><code>{b.case_id}</code></div>
+            </div>
+            <span className="dam-feed__time">supervisor alerted</span>
+          </div>
+        ))}
       </div>
 
       <Modal

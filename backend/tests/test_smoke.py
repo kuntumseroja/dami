@@ -56,6 +56,11 @@ def test_checkpoint_requires_approver_role(client):
         assert client.post(f"/api/cases/{case_id}/advance", headers=DRAFTER).status_code == 200
     assert client.get(f"/api/cases/{case_id}", headers=DRAFTER).json()["stage"] == "internal_review"
 
+    # 4.7 merge gate: complete both parallel workstreams before board prep
+    for stream in ("drafting", "routing_verification"):
+        client.post(f"/api/cases/{case_id}/workstream", headers=REVIEWER,
+                    data={"stream": stream, "status": "complete"})
+
     # internal_review is a human checkpoint for medium-risk: reviewer is not enough
     denied = client.post(f"/api/cases/{case_id}/advance", headers=REVIEWER)
     assert denied.status_code == 403

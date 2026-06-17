@@ -9,6 +9,7 @@ from app.domain.models import (
     ConsistencyReport,
     DocumentImmutable,
     DocumentLocked,
+    MergeGateBlocked,
     NotLockHolder,
     DataClassification,
     DocumentType,
@@ -34,6 +35,15 @@ from app.infrastructure.security import get_current_user, require_roles
 from app.use_cases import manage_case, manage_document, versioning
 from app.use_cases.automation_safety import list_incidents
 from app.use_cases.board_gate import unresolved_critical
+from app.use_cases.workflow_ops import (
+    assign_stage_owner,
+    get_assignments,
+    list_notifications,
+    merge_gate_pending,
+    set_workstream,
+    sla_scan,
+    workstream_state,
+)
 from app.use_cases.check_consistency import check_consistency
 from app.use_cases.cover_checklist import build_cover_checklist
 from app.use_cases.metrics import summarize_latency
@@ -261,6 +271,8 @@ async def advance_case(
         raise HTTPException(404, "case not found") from None
     except manage_case.Forbidden as exc:
         raise HTTPException(403, str(exc)) from exc
+    except MergeGateBlocked as exc:
+        raise HTTPException(409, detail={"error": str(exc), "pending_streams": exc.pending}) from exc
     except BoardGateBlocked as exc:
         raise HTTPException(409, detail={"error": str(exc), "blocking": exc.items}) from exc
     except SignoffRequired as exc:
@@ -321,6 +333,59 @@ async def doc_diff(case_id: str, doc_id: str, a: int, b: int,
                                                        repository=c.repository)}
     except KeyError as exc:
         raise HTTPException(404, str(exc)) from exc
+
+
+@router.post("/cases/{case_id}/assign")
+async def assign_owner(
+    case_id: str,
+    stage: str = Form(...),
+    owner: str = Form(...),
+    deadline_days: int = Form(3),
+    user: User = Depends(require_roles(Role.REVIEWER, Role.APPROVER, Role.ADMIN)),
+    c: Container = Depends(deps),
+):
+    """Assign a stage owner + send them a task notification (4.7)."""
+    return await assign_stage_owner(case_id, stage, owner, deadline_days=deadline_days,
+                                    repository=c.repository, audit=c.audit)
+
+
+@router.get("/cases/{case_id}/assignments")
+async def case_assignments(case_id: str, c: Container = Depends(deps)):
+    return await get_assignments(case_id, repository=c.repository)
+
+
+@router.post("/cases/{case_id}/workstream")
+async def update_workstream(
+    case_id: str,
+    stream: str = Form(...),
+    status: str = Form(...),
+    user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
+    c: Container = Depends(deps),
+):
+    """Set a parallel workstream's status (drafting / routing_verification) — 4.7."""
+    return await set_workstream(case_id, stream, status, repository=c.repository, audit=c.audit)
+
+
+@router.get("/cases/{case_id}/workstreams")
+async def case_workstreams(case_id: str, c: Container = Depends(deps)):
+    return {"streams": await workstream_state(case_id, repository=c.repository),
+            "merge_pending": await merge_gate_pending(case_id, repository=c.repository)}
+
+
+@router.get("/notifications")
+async def my_notifications(to: str, unread_only: bool = False,
+                          c: Container = Depends(deps)):
+    return await list_notifications(to, repository=c.repository, unread_only=unread_only)
+
+
+@router.post("/workflow/sla-scan")
+async def run_sla_scan(
+    user: User = Depends(get_current_user),
+    c: Container = Depends(deps),
+):
+    """Scan open cases for stage-SLA breaches → alert supervisors (4.7)."""
+    scope = None if user.has_role(Role.BPI_OVERSIGHT) else user.entity.value
+    return await sla_scan(repository=c.repository, audit=c.audit, scope=scope)
 
 
 @router.get("/cases/{case_id}/incidents")
