@@ -1,3 +1,7 @@
+# Rulebook version — recorded on every routing decision (4.4 FR-4/FR-8).
+# Bump on any approved rule/threshold change (dual-approval governed).
+rulebook_version: 1
+
 # Digitized SOP decision rules for DAM request routing.
 #
 # This file IS the codified rulebook (requirement F: "codify rules into

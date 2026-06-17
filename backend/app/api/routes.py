@@ -43,6 +43,12 @@ from app.use_cases.resolve_findings import (
     summarize_false_positives,
 )
 from app.use_cases.review_panel import run_review_panel
+from app.use_cases.rule_governance import (
+    SelfApprovalForbidden,
+    decide_rule_change,
+    list_rule_changes,
+    propose_rule_change,
+)
 from app.use_cases.review_queue import (
     acknowledge_review,
     get_review_state,
@@ -87,6 +93,48 @@ async def list_templates(c: Container = Depends(deps)):
 async def list_sops():
     """SOP catalogue with lifecycle metadata (version/owner/status/active) — 4.1."""
     return sop_catalogue()
+
+
+@router.get("/rules/version")
+async def rules_version():
+    from app.domain.rules import load_rulebook
+    return {"rulebook_version": load_rulebook().get("rulebook_version", 1)}
+
+
+@router.get("/rules/changes")
+async def list_changes(c: Container = Depends(deps)):
+    return await list_rule_changes(c.repository)
+
+
+@router.post("/rules/changes")
+async def propose_change(
+    summary: str = Form(...),
+    detail: str = Form(""),
+    user: User = Depends(require_roles(Role.REVIEWER, Role.APPROVER, Role.ADMIN)),
+    c: Container = Depends(deps),
+):
+    """Propose a rule/threshold change (requires a second approver — 4.4)."""
+    return await propose_rule_change(summary, detail, proposed_by=user.id,
+                                     repository=c.repository, audit=c.audit)
+
+
+@router.post("/rules/changes/{change_id}/decide")
+async def decide_change(
+    change_id: str,
+    decision: str = Form(...),
+    user: User = Depends(require_roles(Role.APPROVER, Role.ADMIN)),
+    c: Container = Depends(deps),
+):
+    """Approve/reject a rule change — a proposer can never self-approve (4.4)."""
+    try:
+        return await decide_rule_change(change_id, approver=user.id, decision=decision,
+                                        repository=c.repository, audit=c.audit)
+    except KeyError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except SelfApprovalForbidden as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
 
 
 @router.get("/routing/decision-tree")

@@ -121,6 +121,7 @@ def evaluate(request: RoutingRequest) -> dict:
         "sop": f'{sop["id"]} — {sop["name"]}',
         "sop_id": sop["id"],
         "sop_version": sop.get("version"),
+        "rulebook_version": book.get("rulebook_version", 1),
         "approval_required": approval["approval_required"],
         "approval_level": approval.get("approval_level"),
         "approval_suppressed": approval_suppressed,

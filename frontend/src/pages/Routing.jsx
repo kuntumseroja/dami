@@ -45,6 +45,20 @@ export default function Routing() {
   const [coverage, setCoverage] = useState(null);
   const [expanded, setExpanded] = useState(null);
   const [tree, setTree] = useState(null);
+  const [rulesVer, setRulesVer] = useState(null);
+  const [changes, setChanges] = useState([]);
+  const [proposal, setProposal] = useState('');
+
+  const refreshChanges = () => api.ruleChanges().then(setChanges).catch(() => setChanges([]));
+  const propose = async () => {
+    if (!proposal.trim()) return;
+    try { await api.proposeRuleChange(proposal); setProposal(''); refreshChanges(); }
+    catch (e) { setError(e.message); }
+  };
+  const decide = async (id, d) => {
+    try { await api.decideRuleChange(id, d); refreshChanges(); }
+    catch (e) { setError(e.message); }
+  };
   const [simType, setSimType] = useState('capital_expenditure');
   const [simAmount, setSimAmount] = useState(0);
   const [sim, setSim] = useState(null);
@@ -53,6 +67,8 @@ export default function Routing() {
     api.sops().then(setSops).catch(() => setSops([]));
     api.sopCoverage().then(setCoverage).catch(() => setCoverage(null));
     api.decisionTree().then(setTree).catch(() => setTree(null));
+    api.rulesVersion().then(setRulesVer).catch(() => setRulesVer(null));
+    api.ruleChanges().then(setChanges).catch(() => setChanges([]));
   }, []);
 
   const simulate = () =>
@@ -174,7 +190,7 @@ export default function Routing() {
           )}
           <p style={{ whiteSpace: 'pre-wrap' }}>{decision.explanation}</p>
           <p className="dam-meta">
-            SOP version: <code>v{decision.sop_version}</code> · Rules fired: {decision.rules_fired.map((r) => <code key={r}>{r} </code>)}
+            SOP v{decision.sop_version} · Rulebook v{decision.rulebook_version} · Rules fired: {decision.rules_fired.map((r) => <code key={r}>{r} </code>)}
             · Trace: <code>{decision.trace_id}</code>
           </p>
         </div>
@@ -233,6 +249,38 @@ export default function Routing() {
           </div>
         </>
       )}
+
+      {/* Rule governance — dual-approval (4.4, FR-4/FR-8) */}
+      <div className="dam-section">
+        <h2 className="dam-section__title">Rule governance</h2>
+        {rulesVer && <span className="dam-section__meta">Rulebook v{rulesVer.rulebook_version} · every decision records this</span>}
+      </div>
+      <div className="dam-card">
+        <div style={{ display: 'flex', gap: 'var(--sp-3)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <TextInput id="proposal" labelText="Propose a rule / threshold change"
+            placeholder="e.g. Lower lease approval ceiling to Rp400m"
+            value={proposal} onChange={(e) => setProposal(e.target.value)} style={{ minWidth: 320 }} />
+          <Button kind="tertiary" onClick={propose} disabled={!proposal.trim()}>Propose change</Button>
+        </div>
+        <p className="dam-meta" style={{ marginTop: 'var(--sp-2)' }}>
+          A change requires a second approver — a proposer can never self-approve.
+        </p>
+        {changes.map((ch) => (
+          <div key={ch.id} className="dam-feed__row">
+            <span className={`dam-pill dam-pill--${ch.status === 'approved' ? 'success' : ch.status === 'rejected' ? 'error' : 'warning'} dam-pill--plain`}>{ch.status}</span>
+            <div className="dam-feed__text">
+              <div className="dam-feed__title">{ch.summary}</div>
+              <div className="dam-feed__sub">proposed by {ch.proposed_by}{ch.approved_by ? ` · decided by ${ch.approved_by}` : ''}</div>
+            </div>
+            {ch.status === 'pending' && (
+              <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+                <Button size="sm" kind="ghost" onClick={() => decide(ch.id, 'approved')}>Approve</Button>
+                <Button size="sm" kind="ghost" onClick={() => decide(ch.id, 'rejected')}>Reject</Button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
 
       {/* SOP catalogue + coverage (4.1, FR-7) */}
       <div className="dam-section">

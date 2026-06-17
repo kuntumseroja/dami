@@ -569,6 +569,7 @@ class RoutingDecision(BaseModel):
     case_id: str
     applicable_sop: str
     sop_version: int | None = None      # SOP lifecycle version recorded per decision (4.1/4.4)
+    rulebook_version: int | None = None  # rulebook version applied — legal defensibility (4.4)
     approval_required: bool
     approval_level: str | None = None
     risk_tier: RiskTier

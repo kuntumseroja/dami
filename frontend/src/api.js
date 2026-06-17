@@ -76,6 +76,12 @@ export const api = {
   sops: () => fetch('/api/sop').then(json),
   sopCoverage: () => fetch('/api/sop/coverage').then(json),
   decisionTree: () => fetch('/api/routing/decision-tree').then(json),
+  rulesVersion: () => fetch('/api/rules/version').then(json),
+  ruleChanges: () => fetch('/api/rules/changes').then(json),
+  proposeRuleChange: (summary, detail) =>
+    fetch('/api/rules/changes', { method: 'POST', body: form({ summary, detail: detail || '' }) }).then(json),
+  decideRuleChange: (id, decision) =>
+    fetch(`/api/rules/changes/${id}/decide`, { method: 'POST', body: form({ decision }) }).then(json),
   routingSimulate: (requestType, amountIdr) =>
     fetch(`/api/routing/simulate?request_type=${requestType}&amount_idr=${amountIdr || 0}`).then(json),
 };

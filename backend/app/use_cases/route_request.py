@@ -44,6 +44,7 @@ async def route_request(
         case_id=request.case_id,
         applicable_sop=outcome["sop"],
         sop_version=outcome.get("sop_version"),
+        rulebook_version=outcome.get("rulebook_version"),
         pre_conditions=outcome.get("pre_conditions", []),
         expected_timeline_days=outcome.get("expected_timeline_days"),
         approval_suppressed=outcome.get("approval_suppressed", False),
