@@ -32,6 +32,7 @@ from app.domain.taxonomy import CONSISTENCY_TYPES, default_severities
 from app.infrastructure.container import Container, get_container
 from app.infrastructure.security import get_current_user, require_roles
 from app.use_cases import manage_case, manage_document, versioning
+from app.use_cases.automation_safety import list_incidents
 from app.use_cases.board_gate import unresolved_critical
 from app.use_cases.check_consistency import check_consistency
 from app.use_cases.cover_checklist import build_cover_checklist
@@ -320,6 +321,12 @@ async def doc_diff(case_id: str, doc_id: str, a: int, b: int,
                                                        repository=c.repository)}
     except KeyError as exc:
         raise HTTPException(404, str(exc)) from exc
+
+
+@router.get("/cases/{case_id}/incidents")
+async def case_incidents(case_id: str, c: Container = Depends(deps)):
+    """Automation-safety incidents for a case (4.6)."""
+    return await list_incidents(case_id, repository=c.repository)
 
 
 @router.get("/cases/{case_id}/board-gate")

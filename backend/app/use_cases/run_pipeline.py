@@ -17,6 +17,7 @@ from app.domain.ports import (
     VectorStore,
 )
 from app.domain.sla import sla_target_ms, within_sla
+from app.use_cases.automation_safety import run_guarded
 from app.use_cases.check_consistency import check_consistency
 from app.use_cases.draft_nota import draft_nota
 from app.use_cases.extract_fields import extract_submission_fields
@@ -35,6 +36,24 @@ async def run_case_pipeline(
     if case is None:
         raise KeyError(f"unknown case {case_id}")
 
+    # Automation safety (4.6): any fault in the automated pipeline auto-escalates
+    # to a human reviewer + logs an incident, then surfaces the error.
+    async def _pipeline() -> dict:
+        return await _run_pipeline_body(
+            case_id, user, trace_id, started, router=router, embedder=embedder,
+            vectors=vectors, repository=repository, audit=audit, reranker=reranker,
+            templates=templates)
+
+    return await run_guarded(case_id, "pipeline", _pipeline,
+                             repository=repository, audit=audit)
+
+
+async def _run_pipeline_body(
+    case_id: str, user: User, trace_id: str, started: float, *,
+    router: ModelRouter, embedder: Embedder, vectors: VectorStore,
+    repository: CaseRepository, audit: AuditLog,
+    reranker: Reranker | None = None, templates: TemplateStore | None = None,
+) -> dict:
     # 1. Extract structured facts from the ingested submission.
     fields, extraction_trace = await extract_submission_fields(
         case_id, router=router, embedder=embedder, vectors=vectors, audit=audit,
