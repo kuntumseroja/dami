@@ -36,6 +36,26 @@ def _matches_type(rule_types, request_type: str) -> bool:
     return request_type in rule_types
 
 
+# Routing output completion (4.3, FR-4): pre-conditions + processing timeline.
+_DEFAULT_PRECONDITIONS = ["Cover sheet attached", "Request letter (Nota Dinas) attached"]
+_PRECONDITIONS = {
+    "SOP-DAM-001": ["Independent KJPP valuation attached", "Open-auction mechanism documented"],
+    "SOP-DAM-002": ["Feasibility study attached", "Legal review attached"],
+    "SOP-DAM-003": ["Idle-asset justification", "Lease term & rate documented"],
+    "SOP-DAM-004": ["Indicative term sheet attached", "Use-of-proceeds stated",
+                    "OJK / Kemenkeu coordination noted"],
+    "SOP-DAM-005": ["Feasibility study", "Legal review", "Dewan Komisaris recommendation",
+                    "KPPU merger-control assessment"],
+    "SOP-DAM-006": ["Feasibility study", "PSN status confirmed (if applicable)"],
+    "SOP-DAM-007": ["Residual book value stated", "Disposal / scrap plan"],
+    "SOP-DAM-008": ["Prospectus / rights-issue terms", "Legal review", "OJK coordination"],
+    "SOP-DAM-009": ["Liquidation plan", "Creditor & employee settlement plan", "Legal review"],
+}
+# Indicative processing timeline (business days) by required approval level.
+_TIMELINE_DAYS = {None: 3, "ceo": 7, "dewan_pengawas": 21, "president": 45}
+_RESOLVER = "DAM Compliance — designated routing resolver"
+
+
 def _sop_active(sop: dict, today: date | None = None) -> bool:
     """Only an approved SOP whose effective_date has arrived may route (4.1)."""
     if sop.get("status", "approved") != "approved":
@@ -90,14 +110,26 @@ def evaluate(request: RoutingRequest) -> dict:
         break
     fired.append(tier_rule["id"])
 
+    # 4. Routing output completion (4.3): pre-conditions, timeline, ambiguity.
+    pre_conditions = _DEFAULT_PRECONDITIONS + _PRECONDITIONS.get(sop["id"], [])
+    expected_timeline_days = _TIMELINE_DAYS.get(approval.get("approval_level"), 7)
+    # Suppress clearly-unnecessary approvals (value below the delegation floor).
+    approval_suppressed = (not approval["approval_required"]) and amount > 0
+    # Ambiguous when no specific SOP applies, or the amount is unknown.
+    ambiguous = sop["id"] == "SOP-DAM-999" or request.amount_idr is None
     return {
         "sop": f'{sop["id"]} — {sop["name"]}',
         "sop_id": sop["id"],
         "sop_version": sop.get("version"),
         "approval_required": approval["approval_required"],
         "approval_level": approval.get("approval_level"),
+        "approval_suppressed": approval_suppressed,
         "risk_tier": RiskTier(tier_rule["tier"]),
         "rules_fired": fired,
+        "pre_conditions": pre_conditions,
+        "expected_timeline_days": expected_timeline_days,
+        "ambiguous": ambiguous,
+        "resolver": _RESOLVER if ambiguous else None,
     }
 
 

@@ -149,7 +149,29 @@ export default function Routing() {
             <span className={`dam-pill dam-pill--${RISK_PILL[decision.risk_tier]}`}>
               {decision.risk_tier} risk
             </span>
+            {decision.expected_timeline_days != null && (
+              <span className="dam-pill dam-pill--info dam-pill--plain">
+                ~{decision.expected_timeline_days} business days
+              </span>
+            )}
           </div>
+          {decision.ambiguous && (
+            <InlineNotification kind="warning" lowContrast hideCloseButton
+              title="Ambiguous routing — escalated to a human resolver"
+              subtitle={`No specific SOP confidently applies. Routed to: ${decision.resolver}. Review the fired rules below.`}
+              style={{ marginBottom: 'var(--sp-3)' }} />
+          )}
+          {decision.approval_suppressed && (
+            <p className="dam-meta">✓ Unnecessary approval suppressed — value below the delegation threshold.</p>
+          )}
+          {decision.pre_conditions?.length > 0 && (
+            <div style={{ margin: 'var(--sp-3) 0' }}>
+              <div className="dam-sop__row" style={{ padding: 0, fontWeight: 600 }}>Pre-conditions to satisfy</div>
+              {decision.pre_conditions.map((p) => (
+                <div key={p} className="dam-meta" style={{ padding: '2px 0' }}>• {p}</div>
+              ))}
+            </div>
+          )}
           <p style={{ whiteSpace: 'pre-wrap' }}>{decision.explanation}</p>
           <p className="dam-meta">
             SOP version: <code>v{decision.sop_version}</code> · Rules fired: {decision.rules_fired.map((r) => <code key={r}>{r} </code>)}

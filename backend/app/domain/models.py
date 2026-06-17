@@ -575,3 +575,9 @@ class RoutingDecision(BaseModel):
     rules_fired: list[str]      # deterministic rule ids — the legal defensibility record
     explanation: str            # plain-language rationale (LLM-generated, rule-grounded)
     trace_id: str
+    # Routing output completion (4.3, FR-4) — the four-part contract + ambiguity:
+    pre_conditions: list[str] = []
+    expected_timeline_days: int | None = None
+    approval_suppressed: bool = False    # unnecessary approval flagged + suppressed
+    ambiguous: bool = False              # no specific SOP / missing amount → human resolver
+    resolver: str | None = None
