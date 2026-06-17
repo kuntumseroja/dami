@@ -69,6 +69,7 @@ from app.use_cases.review_queue import (
     summarize_acknowledgment,
 )
 from app.use_cases.draft_nota import draft_nota
+from app.use_cases.hands_free import run_hands_free
 from app.use_cases.draft_review import (
     export_nota_markdown,
     get_action_state,
@@ -652,6 +653,21 @@ async def agent_consistency(
     return await check_consistency(case_id, router=c.router, embedder=c.embedder,
                                    vectors=c.vectors, repository=c.repository,
                                    audit=c.audit, reranker=c.reranker)
+
+
+@router.post("/agents/hands-free/{case_id}")
+async def agent_hands_free(
+    case_id: str,
+    user: User = Depends(require_roles(Role.DRAFTER, Role.REVIEWER)),
+    c: Container = Depends(deps),
+):
+    """Run an eligible low-risk case intake → communication dispatch, zero-touch (4.8)."""
+    try:
+        return await run_hands_free(case_id, router=c.router, embedder=c.embedder,
+                                    vectors=c.vectors, repository=c.repository,
+                                    audit=c.audit, reranker=c.reranker, templates=c.templates)
+    except KeyError as exc:
+        raise HTTPException(404, str(exc)) from exc
 
 
 @router.post("/agents/review-panel/{case_id}", response_model=PanelReview)

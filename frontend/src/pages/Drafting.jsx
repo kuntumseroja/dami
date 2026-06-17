@@ -78,6 +78,16 @@ export default function Drafting() {
   // Refresh the document list + the auto-reconciled completeness checklist.
   const [workstreams, setWorkstreams] = useState(null);
   const [ownerName, setOwnerName] = useState('');
+  const [handsFree, setHandsFree] = useState(null);
+  const [hfBusy, setHfBusy] = useState(false);
+
+  const runHandsFree = async () => {
+    setHfBusy(true); setError(null);
+    try {
+      setHandsFree(await api.handsFree(caseId));
+      loadCase(caseId);
+    } catch (e) { setError(e.message); } finally { setHfBusy(false); }
+  };
 
   const refreshDocs = (id = caseId) => {
     if (!id) return;
@@ -207,7 +217,26 @@ export default function Drafting() {
           <span className="dam-pill dam-pill--info dam-pill--plain">
             {docs.length} document{docs.length === 1 ? '' : 's'} attached
           </span>
+          {hfBusy ? (
+            <InlineLoading description="Running hands-free…" />
+          ) : (
+            <Button kind="ghost" size="sm" renderIcon={MachineLearningModel} onClick={runHandsFree}>
+              Run hands-free (low-risk)
+            </Button>
+          )}
         </div>
+      )}
+
+      {handsFree && (
+        <InlineNotification
+          kind={handsFree.hands_free ? 'success' : 'warning'}
+          lowContrast hideCloseButton
+          title={handsFree.hands_free ? 'Completed hands-free — zero human touches' : 'Escalated to human'}
+          subtitle={handsFree.hands_free
+            ? `Intake → ${handsFree.final_stage} autonomously. Full trace in the audit log.`
+            : `${handsFree.reason} — final stage ${handsFree.final_stage}.`}
+          style={{ marginBottom: 'var(--sp-4)' }}
+        />
       )}
 
       {/* Auto-reconciled completeness checklist — reflects the docs actually
